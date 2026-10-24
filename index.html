@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Exeyta Launcher — красивый лаунчер Minecraft с редактором скинов, Fabric и быстрым запуском." />
+  <meta name="theme-color" content="#140910" />
+  <title>Exeyta Launcher — лаунчер Minecraft</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="bg">
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="grid"></div>
+    <canvas id="particles" aria-hidden="true"></canvas>
+  </div>
+
+  <header class="header">
+    <a class="brand" href="#">
+      <span class="brand-mark">E</span>
+      <span class="brand-text">
+        <strong>EXEYTA</strong>
+        <small>LAUNCHER</small>
+      </span>
+    </a>
+    <nav class="nav">
+      <a href="#features">Возможности</a>
+      <a href="#editor">Скины</a>
+      <a href="#download">Скачать</a>
+    </nav>
+    <a class="btn btn-telegram" href="https://t.me/exeyta" target="_blank" rel="noopener noreferrer">Telegram</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Minecraft · Fabric · 1.21+</p>
+        <h1>Лаунчер, который <span class="grad">хочется открывать</span></h1>
+        <p class="lead">
+          Exeyta — тёмный закатный интерфейс, мгновенный запуск, встроенный редактор скинов
+          в одном слое и всё на русском.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#download">Скачать лаунчер</a>
+          <a class="btn btn-ghost" href="#editor">Смотреть редактор</a>
+        </div>
+        <ul class="hero-stats">
+          <li><strong>1 слой</strong><span>краски в скине</span></li>
+          <li><strong>3D</strong><span>превью персонажа</span></li>
+          <li><strong>Fabric</strong><span>из коробки</span></li>
+        </ul>
+      </div>
+
+      <div class="hero-visual" id="launcher3d" aria-label="Интерфейс Exeyta Launcher в 3D">
+        <div class="stage">
+          <div class="launcher-3d">
+            <div class="launcher-glow"></div>
+            <img src="assets/launcher-ui.svg" alt="Интерфейс Exeyta Launcher" width="1864" height="1036" draggable="false" />
+          </div>
+          <div class="stage-floor"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <h2>Всё для игры — в одном окне</h2>
+      <p class="section-lead">Без лишних вкладок и хаоса. Запуск, скины, настройки и сообщество.</p>
+      <div class="feature-grid">
+        <article class="card reveal">
+          <div class="card-icon">▶</div>
+          <h3>Быстрый запуск</h3>
+          <p>Версия, память, Java и Fabric — на одном экране. Одна кнопка «Играть».</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-icon">✎</div>
+          <h3>Редактор скинов</h3>
+          <p>Развёртка UV, кисть, заливка, палитра и 3D-превью. Без слоёв — только краска.</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-icon">⚙</div>
+          <h3>Настройки</h3>
+          <p>RAM, путь к игре, JVM и язык. Плюс шестерёнка у профиля для учётных записей.</p>
+        </article>
+        <article class="card reveal">
+          <div class="card-icon">✈</div>
+          <h3>Telegram</h3>
+          <p>Кнопка сообщества прямо в боковой панели — новости и поддержка рядом.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="editor-spotlight" id="editor">
+      <div class="editor-copy reveal">
+        <h2>Редактор скина без лишнего</h2>
+        <p>
+          Как в любимых редакторах: тело разложено на части, кисть 1 px, зум и вращение
+          модели мышью. Сохранение, импорт PNG и применение в игру — в один клик.
+        </p>
+        <ul class="ticks">
+          <li>Один слой — никакой путаницы</li>
+          <li>Живая 3D-модель рядом с холстом</li>
+          <li>Тёмная тема в стиле лаунчера</li>
+        </ul>
+      </div>
+      <div class="editor-visual reveal">
+        <div class="mock-panels">
+          <span class="mock-chip">P · F · E · U</span>
+          <span class="mock-chip accent">Сохранить</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="download" id="download">
+      <div class="download-card reveal">
+        <h2>Готов играть?</h2>
+        <p>Скачай Exeyta Launcher для Windows. Скоро — больше платформ.</p>
+        <a class="btn btn-primary btn-lg" href="#">Скачать для Windows</a>
+        <p class="fine">Сборка в разработке — следи за релизом в Telegram.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© <span id="year"></span> Exeyta Launcher</p>
+    <a href="https://t.me/exeyta" target="_blank" rel="noopener noreferrer">Telegram</a>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

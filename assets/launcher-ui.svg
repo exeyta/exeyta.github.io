@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="28 22 1864 1036" width="1864" height="1036">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#100710"/><stop offset="45%" stop-color="#1a0c16"/><stop offset="100%" stop-color="#2a1220"/></linearGradient>
+<linearGradient id="sun" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffe08a"/><stop offset="42%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#ff4d88"/></linearGradient>
+<linearGradient id="sunH" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ffb703"/><stop offset="100%" stop-color="#ff4d6d"/></linearGradient>
+<linearGradient id="card" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a2148"/><stop offset="22%" stop-color="#24142e"/><stop offset="100%" stop-color="#140c1a"/></linearGradient>
+<linearGradient id="side" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#24122c"/><stop offset="100%" stop-color="#100810"/></linearGradient>
+<linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.14"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+<radialGradient id="orbA" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ff8a3d" stop-opacity="0.55"/><stop offset="100%" stop-color="#ff8a3d" stop-opacity="0"/></radialGradient>
+<radialGradient id="orbB" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ff4d88" stop-opacity="0.4"/><stop offset="100%" stop-color="#ff4d88" stop-opacity="0"/></radialGradient>
+<radialGradient id="stage" cx="50%" cy="40%" r="65%"><stop offset="0%" stop-color="#5a2a48"/><stop offset="100%" stop-color="#0c0610"/></radialGradient>
+<pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M 32 0 L 0 0 0 32" fill="none" stroke="#ffffff" stroke-opacity="0.025" stroke-width="1"/></pattern>
+<pattern id="chk" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#2a1834"/><rect x="8" y="8" width="8" height="8" fill="#2a1834"/><rect x="8" width="8" height="8" fill="#1c1024"/><rect y="8" width="8" height="8" fill="#1c1024"/></pattern>
+<filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#000" flood-opacity="0.55"/></filter>
+<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<clipPath id="win"><rect x="28" y="22" width="1864" height="1036" rx="28"/></clipPath>
+</defs>
+<g>
+<rect x="28" y="22" width="1864" height="1036" fill="url(#bg)"/>
+<rect x="28" y="22" width="1864" height="3" fill="url(#sunH)"/>
+<rect x="28" y="22" width="280" height="1036" fill="url(#side)"/>
+<line x1="308" y1="22" x2="308" y2="1058" stroke="#ffffff" stroke-opacity="0.06"/>
+<g transform="translate(58,58)">
+<rect x="0" y="0" width="42" height="42" rx="13" fill="url(#sun)"/>
+<text x="21" y="28" text-anchor="middle" fill="#1a0a10" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="800">E</text>
+</g>
+<text x="114" y="78" fill="url(#sun)" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="800">EXEYTA</text>
+<text x="114" y="98" fill="#c9a8b8" font-family="Segoe UI, Arial, sans-serif" font-size="10" letter-spacing="3.2">LAUNCHER</text>
+<g transform="translate(74,160)" fill="none" stroke="#a88898" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+<path d="M4 11 L12 4 L20 11 V20 H14 V14 H10 V20 H4 Z"/>
+</g>
+<text x="112" y="178" fill="#e7d5df" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="500">&#1043;&#1083;&#1072;&#1074;&#1085;&#1072;&#1103;</text>
+<g transform="translate(74,218)" fill="none" stroke="#a88898" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+<path d="M8 5 L20 12 L8 19 Z"/>
+</g>
+<text x="112" y="236" fill="#e7d5df" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="500">&#1048;&#1075;&#1088;&#1072;&#1090;&#1100;</text>
+<rect x="52" y="264" width="232" height="48" rx="14" fill="#ffb70318" stroke="#ffb703" stroke-width="1.25"/>
+<rect x="52" y="276" width="3" height="24" rx="2" fill="url(#sunH)"/>
+<g transform="translate(74,276)" fill="none" stroke="#ffb703" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+<path d="M12 4 a4 4 0 1 1 0 8 a4 4 0 0 1 0-8 M5 20 c1-4 4-6 7-6 s6 2 7 6"/>
+</g>
+<text x="112" y="294" fill="#ffe7b0" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="650">&#1057;&#1082;&#1080;&#1085;&#1099;</text>
+<g transform="translate(74,334)" fill="none" stroke="#a88898" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+<path d="M12 8 a4 4 0 1 1 0 8 a4 4 0 0 1 0-8 M12 3 v2 M12 19 v2 M3 12 h2 M19 12 h2"/>
+</g>
+<text x="112" y="352" fill="#e7d5df" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="500">&#1053;&#1072;&#1089;&#1090;&#1088;&#1086;&#1081;&#1082;&#1080;</text>
+<text x="60" y="412" fill="#8d7084" font-family="Segoe UI, Arial, sans-serif" font-size="11" letter-spacing="1.8">&#1057;&#1054;&#1054;&#1041;&#1065;&#1045;&#1057;&#1058;&#1042;&#1054;</text>
+<g filter="url(#glow)">
+<rect x="52" y="430" width="232" height="50" rx="16" fill="#2AABEE"/>
+</g>
+<path d="M78 447 L116 455 L78 463 L88 455 Z" fill="#ffffff"/>
+<text x="132" y="460" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700">Telegram</text>
+<rect x="52" y="968" width="232" height="70" rx="16" fill="#1c1024" stroke="#ffffff14"/>
+<circle cx="86" cy="1003" r="20" fill="none" stroke="url(#sun)" stroke-width="2"/>
+<circle cx="86" cy="1003" r="16" fill="#e8c49a"/>
+<rect x="76" y="994" width="20" height="7" rx="2" fill="#4a3728"/>
+<text x="114" y="998" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700">Exeyta</text>
+<text x="114" y="1018" fill="#ffb703" font-family="Segoe UI, Arial, sans-serif" font-size="11">Premium</text>
+<rect x="236" y="984" width="36" height="36" rx="12" fill="#2a1834" stroke="#ffb703"/>
+<g transform="translate(242,990)">
+<path fill="#ffe7b0" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.1 7.1 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/>
+</g>
+<rect x="328" y="48" width="430" height="648" rx="22" fill="url(#card)" stroke="#ffffff18" stroke-width="1"/>
+<clipPath id="sh376"><rect x="328" y="48" width="430" height="648" rx="22"/></clipPath>
+<rect x="328" y="48" width="430" height="56" fill="url(#sheen)" clip-path="url(#sh376)"/>
+<text x="352" y="86" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">&#1047;&#1072;&#1087;&#1091;&#1089;&#1082;</text>
+<text x="352" y="108" fill="#86efac" font-family="Segoe UI, Arial, sans-serif" font-size="12">&#1089;&#1077;&#1089;&#1089;&#1080;&#1103; &#1075;&#1086;&#1090;&#1086;&#1074;&#1072;</text>
+<rect x="352" y="128" width="382" height="78" rx="16" fill="#120910" stroke="#ffffff14"/>
+<text x="372" y="156" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">Minecraft</text>
+<text x="372" y="184" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">1.21.4</text>
+<rect x="600" y="156" width="110" height="30" rx="10" fill="#2a1834" stroke="#ffb703"/>
+<text x="655" y="176" text-anchor="middle" fill="#ffe7b0" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700">Fabric</text>
+<rect x="352" y="222" width="382" height="360" rx="18" fill="#120910" stroke="#ffffff10"/>
+<text x="372" y="250" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">&#1055;&#1072;&#1084;&#1103;&#1090;&#1100;</text>
+<text x="714" y="250" text-anchor="end" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">6 GB</text>
+<rect x="372" y="264" width="342" height="6" rx="3" fill="#2a1834"/>
+<rect x="372" y="264" width="210" height="6" rx="3" fill="url(#sunH)"/>
+<line x1="372" y1="286" x2="714" y2="286" stroke="#ffffff10"/>
+<text x="372" y="318" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">Java</text>
+<text x="714" y="318" text-anchor="end" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">21 Temurin</text>
+<line x1="372" y1="354" x2="714" y2="354" stroke="#ffffff10"/>
+<text x="372" y="386" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">&#1055;&#1072;&#1087;&#1082;&#1072;</text>
+<text x="714" y="386" text-anchor="end" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">C:\Games\Exeyta</text>
+<line x1="372" y1="422" x2="714" y2="422" stroke="#ffffff10"/>
+<text x="372" y="454" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">&#1057;&#1073;&#1086;&#1088;&#1082;&#1072;</text>
+<text x="714" y="454" text-anchor="end" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">Fabric 0.16.9</text>
+<text x="372" y="540" fill="#86efac" font-family="Segoe UI, Arial, sans-serif" font-size="13">&#1043;&#1086;&#1090;&#1086;&#1074;&#1086; &#1082; &#1079;&#1072;&#1087;&#1091;&#1089;&#1082;&#1091;</text>
+<g filter="url(#glow)">
+<rect x="352" y="602" width="382" height="70" rx="18" fill="url(#sun)"/>
+</g>
+<text x="543" y="646" text-anchor="middle" fill="#1a0a10" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="3">&#1048;&#1043;&#1056;&#1040;&#1058;&#1068;</text>
+<rect x="774" y="48" width="1090" height="648" rx="22" fill="url(#card)" stroke="#ff4d8828" stroke-width="1"/>
+<clipPath id="sh822"><rect x="774" y="48" width="1090" height="648" rx="22"/></clipPath>
+<rect x="774" y="48" width="1090" height="56" fill="url(#sheen)" clip-path="url(#sh822)"/>
+<text x="806" y="86" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">&#1056;&#1077;&#1076;&#1072;&#1082;&#1090;&#1086;&#1088; &#1089;&#1082;&#1080;&#1085;&#1072;</text>
+<rect x="1036" y="66" width="168" height="28" rx="14" fill="#2a1834" stroke="#ff4d8866"/>
+<text x="1120" y="85" text-anchor="middle" fill="#ffd0e0" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600">&#1086;&#1076;&#1080;&#1085; &#1089;&#1083;&#1086;&#1081;</text>
+<rect x="802" y="124" width="76" height="448" rx="16" fill="#100810" stroke="#ffffff10"/>
+<rect x="814" y="148" width="52" height="46" rx="12" fill="#ffb70322" stroke="#ffb703"/>
+<g transform="translate(828,156)" fill="none" stroke="#ffe7b0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 26 L14 6 L22 14 Z"/></g>
+<rect x="814" y="212" width="52" height="46" rx="12" fill="#1c1024"/>
+<g transform="translate(828,220)" fill="none" stroke="#e7d5df" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20 L16 8 L22 14 L12 24 Z"/></g>
+<rect x="814" y="276" width="52" height="46" rx="12" fill="#1c1024"/>
+<g transform="translate(828,284)" fill="none" stroke="#e7d5df" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16 H21 V24 H7 Z"/></g>
+<rect x="814" y="340" width="52" height="46" rx="12" fill="#1c1024"/>
+<g transform="translate(828,348)" fill="none" stroke="#e7d5df" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8 A8 8 0 1 0 18 20"/></g>
+<rect x="814" y="404" width="52" height="46" rx="12" fill="#1c1024"/>
+<g transform="translate(828,412)" fill="none" stroke="#e7d5df" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8 V20 M8 14 H20"/></g>
+<rect x="814" y="468" width="52" height="46" rx="12" fill="#1c1024"/>
+<g transform="translate(828,476)" fill="none" stroke="#e7d5df" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14 H20"/></g>
+<text x="840" y="548" text-anchor="middle" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="11">1 px</text>
+<rect x="892" y="124" width="70" height="448" rx="16" fill="#100810" stroke="#ffffff10"/>
+<circle cx="927" cy="152" r="10" fill="#ff4d4d"/>
+<circle cx="927" cy="186" r="10" fill="#ff8a3d"/>
+<circle cx="927" cy="220" r="10" fill="#ffd166"/>
+<circle cx="927" cy="254" r="10" fill="#3ddc84"/>
+<circle cx="927" cy="288" r="10" fill="#4cc9f0"/>
+<circle cx="927" cy="322" r="10" fill="#7c6bff"/>
+<circle cx="927" cy="356" r="10" fill="#ff4d88"/>
+<circle cx="927" cy="390" r="13" fill="none" stroke="#fff8f2" stroke-width="2"/>
+<circle cx="927" cy="390" r="10" fill="#f1c7a4"/>
+<circle cx="927" cy="424" r="10" fill="#5c4033"/>
+<circle cx="927" cy="458" r="10" fill="#1f2430"/>
+<circle cx="927" cy="492" r="10" fill="#f7f4f2"/>
+<circle cx="927" cy="526" r="10" fill="#3d6fbf"/>
+<rect x="976" y="124" width="512" height="448" rx="16" fill="#0c0610" stroke="#ffffff10"/>
+<rect x="988" y="136" width="488" height="424" rx="12" fill="url(#chk)"/>
+<rect x="1038" y="168" width="88" height="88" rx="4" fill="#4a3728" stroke="#ffffff22" stroke-width="1"/>
+<rect x="1016" y="264" width="88" height="88" rx="4" fill="#f1c7a4" stroke="#ffffff22" stroke-width="1"/>
+<rect x="1110" y="264" width="88" height="88" rx="4" fill="#f1c7a4" stroke="#ffffff22" stroke-width="1"/>
+<rect x="1204" y="264" width="88" height="88" rx="4" fill="#e2b48f" stroke="#ffffff22" stroke-width="1"/>
+<rect x="1298" y="264" width="88" height="88" rx="4" fill="#c99878" stroke="#ffffff22" stroke-width="1"/>
+<rect x="1110" y="264" width="88" height="22" fill="#4a3728"/>
+<rect x="1132" y="297" width="11" height="11" fill="#2b1b12"/>
+<rect x="1165" y="297" width="11" height="11" fill="#2b1b12"/>
+<rect x="1143" y="319" width="22" height="4" rx="1" fill="#d4897a"/>
+<text x="1016" y="158" fill="#ffd0e0" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600">&#1043;&#1086;&#1083;&#1086;&#1074;&#1072;</text>
+<rect x="1016" y="430" width="88" height="132" rx="4" fill="#3d7ee8" stroke="#ffffff22" stroke-width="1"/>
+<rect x="1016" y="430" width="10" height="132" fill="#ffffff22"/>
+<rect x="1112" y="430" width="44" height="132" rx="4" fill="#f1c7a4" stroke="#ffffff22" stroke-width="1"/>
+<rect x="1164" y="430" width="44" height="132" rx="4" fill="#e2b48f" stroke="#ffffff22" stroke-width="1"/>
+<rect x="1220" y="430" width="44" height="132" rx="4" fill="#2c3348" stroke="#ffffff22" stroke-width="1"/>
+<rect x="1272" y="430" width="44" height="132" rx="4" fill="#3a4258" stroke="#ffffff22" stroke-width="1"/>
+<text x="1016" y="420" fill="#ffd0e0" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600">&#1058;&#1077;&#1083;&#1086;, &#1088;&#1091;&#1082;&#1080;, &#1085;&#1086;&#1075;&#1080;</text>
+<rect x="1504" y="124" width="336" height="448" rx="16" fill="url(#stage)" stroke="#ffffff10"/>
+<text x="1672" y="152" text-anchor="middle" fill="#d7ecff" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2">3D</text>
+<ellipse cx="1672" cy="500" rx="78" ry="16" fill="#ff8a3d" opacity="0.18"/>
+<ellipse cx="1672" cy="508" rx="46" ry="8" fill="#000" opacity="0.45"/>
+<g transform="translate(1672,236)">
+<rect x="-20" y="132" width="16" height="78" rx="2" fill="#2c3348"/>
+<rect x="6" y="132" width="16" height="78" rx="2" fill="#3a4258"/>
+<rect x="-18" y="132" width="4" height="78" fill="#ffffff18"/>
+<rect x="-30" y="52" width="60" height="82" rx="3" fill="#3d7ee8"/>
+<rect x="-30" y="52" width="8" height="82" fill="#ffffff24"/>
+<rect x="18" y="52" width="12" height="82" fill="#00000022"/>
+<rect x="-48" y="54" width="16" height="74" rx="3" fill="#f1c7a4"/>
+<rect x="32" y="54" width="16" height="74" rx="3" fill="#e2b48f"/>
+<rect x="-32" y="-48" width="64" height="90" rx="4" fill="#f1c7a4"/>
+<rect x="-32" y="-48" width="64" height="20" fill="#4a3728"/>
+<rect x="-32" y="-48" width="12" height="48" fill="#4a3728"/>
+<rect x="20" y="-48" width="12" height="36" fill="#3a2a20"/>
+<rect x="-16" y="0" width="10" height="10" fill="#2b1b12"/>
+<rect x="8" y="0" width="10" height="10" fill="#2b1b12"/>
+<rect x="-14" y="2" width="3" height="3" fill="#ffffff"/>
+<rect x="10" y="2" width="3" height="3" fill="#ffffff"/>
+<rect x="-6" y="20" width="14" height="4" rx="1" fill="#d4897a"/>
+</g>
+<rect x="1564" y="524" width="216" height="30" rx="10" fill="#00000044"/>
+<text x="1672" y="544" text-anchor="middle" fill="#d7c4d0" font-family="Segoe UI, Arial, sans-serif" font-size="12">&#1074;&#1088;&#1072;&#1097;&#1077;&#1085;&#1080;&#1077; &#1084;&#1099;&#1096;&#1100;&#1102;</text>
+<rect x="802" y="592" width="156" height="44" rx="14" fill="url(#sun)"/>
+<text x="880" y="620" text-anchor="middle" fill="#1a0a10" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="800">&#1057;&#1086;&#1093;&#1088;&#1072;&#1085;&#1080;&#1090;&#1100;</text>
+<rect x="972" y="592" width="144" height="44" rx="14" fill="#1c1024" stroke="#ffffff18"/>
+<text x="1044" y="620" text-anchor="middle" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600">&#1048;&#1084;&#1087;&#1086;&#1088;&#1090; PNG</text>
+<rect x="1148" y="592" width="144" height="44" rx="14" fill="#1c1024" stroke="#ffffff18"/>
+<text x="1220" y="620" text-anchor="middle" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600">&#1069;&#1082;&#1089;&#1087;&#1086;&#1088;&#1090;</text>
+<rect x="1304" y="592" width="144" height="44" rx="14" fill="#1c1024" stroke="#ffffff18"/>
+<text x="1376" y="620" text-anchor="middle" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600">&#1042; &#1080;&#1075;&#1088;&#1091;</text>
+<rect x="328" y="712" width="1536" height="320" rx="22" fill="url(#card)" stroke="#ffffff18" stroke-width="1"/>
+<clipPath id="sh1040"><rect x="328" y="712" width="1536" height="320" rx="22"/></clipPath>
+<rect x="328" y="712" width="1536" height="56" fill="url(#sheen)" clip-path="url(#sh1040)"/>
+<text x="352" y="750" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">&#1053;&#1072;&#1089;&#1090;&#1088;&#1086;&#1081;&#1082;&#1080;</text>
+<rect x="352" y="776" width="332" height="228" rx="16" fill="#100810" stroke="#ffffff10"/>
+<rect x="352" y="776" width="4" height="228" fill="url(#sunH)"/>
+<text x="374" y="812" fill="#ffd0e0" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700">&#1055;&#1072;&#1084;&#1103;&#1090;&#1100;</text>
+<text x="374" y="836" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">4096 MB  -  8192 MB</text>
+<rect x="374" y="856" width="288" height="42" rx="12" fill="#1c1024"/>
+<text x="388" y="882" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">6 GB</text>
+<rect x="374" y="918" width="288" height="6" rx="3" fill="#2a1834"/>
+<rect x="374" y="918" width="180" height="6" rx="3" fill="url(#sunH)"/>
+<text x="374" y="960" fill="#e7d5df" font-family="Segoe UI, Arial, sans-serif" font-size="13">&#1040;&#1074;&#1090;&#1086;&#1079;&#1072;&#1087;&#1091;&#1089;&#1082;</text>
+<rect x="602" y="944" width="40" height="22" rx="11" fill="url(#sunH)"/>
+<circle cx="630" cy="955" r="8" fill="#fff"/>
+<rect x="712" y="776" width="332" height="228" rx="16" fill="#100810" stroke="#ffffff10"/>
+<rect x="712" y="776" width="4" height="228" fill="url(#sunH)"/>
+<text x="734" y="812" fill="#ffd0e0" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700">Java</text>
+<text x="734" y="836" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">Java 21 Temurin</text>
+<rect x="734" y="856" width="288" height="42" rx="12" fill="#1c1024"/>
+<text x="748" y="882" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">C:\Java\bin\java.exe</text>
+<text x="734" y="922" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">JVM</text>
+<rect x="734" y="934" width="288" height="40" rx="10" fill="#1c1024"/>
+<text x="748" y="959" fill="#ffe7b0" font-family="Consolas, Courier New, monospace" font-size="13">-XX:+UseG1GC</text>
+<rect x="1072" y="776" width="332" height="228" rx="16" fill="#100810" stroke="#ffffff10"/>
+<rect x="1072" y="776" width="4" height="228" fill="url(#sunH)"/>
+<text x="1094" y="812" fill="#ffd0e0" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700">&#1055;&#1072;&#1087;&#1082;&#1072; &#1080;&#1075;&#1088;&#1099;</text>
+<text x="1094" y="836" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">&#1050;&#1072;&#1090;&#1072;&#1083;&#1086;&#1075; &#1082;&#1083;&#1080;&#1077;&#1085;&#1090;&#1072;</text>
+<rect x="1094" y="856" width="288" height="42" rx="12" fill="#1c1024"/>
+<text x="1108" y="882" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">C:\Games\Exeyta</text>
+<rect x="1094" y="918" width="288" height="42" rx="12" fill="#2a1834" stroke="#ffb703"/>
+<text x="1238" y="944" text-anchor="middle" fill="#ffe7b0" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700">&#1054;&#1073;&#1079;&#1086;&#1088;</text>
+<rect x="1432" y="776" width="332" height="228" rx="16" fill="#100810" stroke="#ffffff10"/>
+<rect x="1432" y="776" width="4" height="228" fill="url(#sunH)"/>
+<text x="1454" y="812" fill="#ffd0e0" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700">&#1071;&#1079;&#1099;&#1082;</text>
+<text x="1454" y="836" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">&#1048;&#1085;&#1090;&#1077;&#1088;&#1092;&#1077;&#1081;&#1089;</text>
+<rect x="1454" y="856" width="288" height="42" rx="12" fill="#1c1024"/>
+<text x="1468" y="882" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</text>
+<rect x="1454" y="918" width="288" height="42" rx="12" fill="#1c1024" stroke="#ffffff18"/>
+<text x="1468" y="944" fill="#e7d5df" font-family="Segoe UI, Arial, sans-serif" font-size="14">English</text>
+</g>
+</svg>
