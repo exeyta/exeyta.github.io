@@ -70,7 +70,7 @@
 <text x="372" y="156" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">Minecraft</text>
 <text x="372" y="184" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">1.21.4</text>
 <rect x="600" y="156" width="110" height="30" rx="10" fill="#2a1834" stroke="#ffb703"/>
-<text x="655" y="176" text-anchor="middle" fill="#ffe7b0" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700">Fabric</text>
+<text x="655" y="176" text-anchor="middle" fill="#ffe7b0" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700">&#1052;&#1086;&#1076;&#1099;</text>
 <rect x="352" y="222" width="382" height="360" rx="18" fill="#120910" stroke="#ffffff10"/>
 <text x="372" y="250" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">&#1055;&#1072;&#1084;&#1103;&#1090;&#1100;</text>
 <text x="714" y="250" text-anchor="end" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">6 GB</text>
@@ -83,8 +83,8 @@
 <text x="372" y="386" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">&#1055;&#1072;&#1087;&#1082;&#1072;</text>
 <text x="714" y="386" text-anchor="end" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">C:\Games\Exeyta</text>
 <line x1="372" y1="422" x2="714" y2="422" stroke="#ffffff10"/>
-<text x="372" y="454" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">&#1057;&#1073;&#1086;&#1088;&#1082;&#1072;</text>
-<text x="714" y="454" text-anchor="end" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">Fabric 0.16.9</text>
+<text x="372" y="454" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">&#1052;&#1086;&#1076;&#1099;</text>
+<text x="714" y="454" text-anchor="end" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">&#1048;&#1079; &#1082;&#1086;&#1088;&#1086;&#1073;&#1082;&#1080;</text>
 <text x="372" y="540" fill="#86efac" font-family="Segoe UI, Arial, sans-serif" font-size="13">&#1043;&#1086;&#1090;&#1086;&#1074;&#1086; &#1082; &#1079;&#1072;&#1087;&#1091;&#1089;&#1082;&#1091;</text>
 <g filter="url(#glow)">
 <rect x="352" y="602" width="382" height="70" rx="18" fill="url(#sun)"/>
