@@ -1,95 +1,93 @@
-/* Quick structural sanity check for the landing page.
-   Usage: node scripts/check-markup.js   (run from the repo root) */
+/* Проверка структуры index.html: парность тегов, обязательные разделы, якоря. */
 const fs = require('fs');
 const path = require('path');
 
-const root = path.resolve(__dirname, '..');
+const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-const count = (re) => (html.match(re) || []).length;
-const pairs = [
-  ['div', /<div\b/g, /<\/div>/g],
-  ['section', /<section\b/g, /<\/section>/g],
-  ['article', /<article\b/g, /<\/article>/g],
-  ['svg', /<svg\b/g, /<\/svg>/g],
-  ['button', /<button\b/g, /<\/button>/g],
-  ['ul', /<ul\b/g, /<\/ul>/g],
-  ['p', /<p\b/g, /<\/p>/g]
-];
-
 let failed = false;
-
-for (const [name, open, close] of pairs) {
-  const a = count(open);
-  const b = count(close);
-  const ok = a === b;
+const check = (name, ok, extra) => {
   if (!ok) failed = true;
-  console.log(`${ok ? 'OK  ' : 'FAIL'} <${name}> open=${a} close=${b}`);
-}
+  console.log(`${ok ? 'OK  ' : 'FAIL'} ${name}${extra ? ' — ' + extra : ''}`);
+};
 
-const tabs = count(/class="tab(?:[ "]|$)/g);
-const panels = count(/role="tabpanel"/g) || count(/class="panel(?:[ "]|$)/g);
-const panelDivs = count(/class="panel(?:[ "]|$)/g);
-console.log(`tabs=${tabs} tabpanels=${panels} panels=${panelDivs}`);
-if (tabs !== panelDivs) {
-  failed = true;
-  console.log('FAIL tab/panel counts must match');
-}
+// Без содержимого <script> и комментариев — иначе ложные срабатывания на символах внутри.
+const markup = html
+  .replace(/<script[\s\S]*?<\/script>/gi, '')
+  .replace(/<!--[\s\S]*?-->/g, '');
 
-// every aria-controls must resolve to an existing id, and vice versa
-const controls = [...html.matchAll(/aria-controls="([^"]+)"/g)].map((m) => m[1]);
-for (const id of controls) {
-  const found = new RegExp(`id="${id}"`).test(html);
-  if (!found) {
-    failed = true;
-    console.log(`FAIL aria-controls="${id}" has no matching id`);
+const voids = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr']);
+
+const stack = [];
+const errors = [];
+const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:\s+[^<>]*?)?)(\/?)>/g;
+let m;
+
+while ((m = tagRe.exec(markup)) !== null) {
+  const closing = m[1] === '/';
+  const name = m[2].toLowerCase();
+  const selfClosing = m[4] === '/';
+
+  if (voids.has(name) || selfClosing) continue;
+
+  if (!closing) {
+    stack.push({ name, at: m.index });
+  } else {
+    const top = stack.pop();
+    if (!top) {
+      errors.push(`лишний </${name}> на позиции ${m.index}`);
+    } else if (top.name !== name) {
+      errors.push(`ожидался </${top.name}>, получен </${name}> на позиции ${m.index}`);
+    }
   }
 }
 
-const labelledBy = [...html.matchAll(/aria-labelledby="([^"]+)"/g)].map((m) => m[1]);
-for (const id of labelledBy) {
-  const found = new RegExp(`id="${id}"`).test(html);
-  if (!found) {
-    failed = true;
-    console.log(`FAIL aria-labelledby="${id}" has no matching id`);
-  }
+for (const left of stack) errors.push(`не закрыт <${left.name}>`);
+check('теги парные', errors.length === 0, errors.slice(0, 5).join('; '));
+
+// Обязательные секции и якоря
+const requiredSections = ['features', 'screens', 'install', 'faq'];
+for (const id of requiredSections) {
+  check(`секция #${id} на месте`, new RegExp(`id="${id}"`).test(html));
 }
 
-// exactly one panel must ship as open (Главная), the rest start hidden
-const openPanels = count(/class="panel[^"]*\bis-active\b[^"]*"/g);
-const hiddenPanels = count(/class="panel[^"]*\bhidden\b[^"]*"/g);
-console.log(`panels open on load=${openPanels} hidden on load=${hiddenPanels}`);
-if (openPanels !== 1 || hiddenPanels !== panels - 1) {
-  failed = true;
-  console.log('FAIL exactly one panel must be open and the rest hidden on load');
+// Каждая навигационная ссылка должна вести на существующий якорь
+const navTargets = [...html.matchAll(/href="#([\w-]+)"/g)].map((x) => x[1]);
+const missingAnchors = [...new Set(navTargets)].filter(
+  (id) => id !== 'top' && !new RegExp(`id="${id}"`).test(html)
+);
+check('все якоря ссылок существуют', missingAnchors.length === 0, missingAnchors.join(', '));
+
+// Один h1
+const h1Count = (html.match(/<h1[\s>]/g) || []).length;
+check('ровно один <h1>', h1Count === 1, `найдено ${h1Count}`);
+
+// Эмодзи не должны попадать в интерфейс как иконки
+const emoji = markup.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu) || [];
+check('нет эмодзи в разметке', emoji.length === 0, emoji.slice(0, 5).join(' '));
+
+// Ключи SEO на месте
+const seoBits = [
+  ['google-site-verification', /name="google-site-verification" content="[\w-]+"/],
+  ['canonical', /rel="canonical" href="https:\/\/exeyta\.github\.io\/"/],
+  ['og:title', /property="og:title"/],
+  ['og:image', /property="og:image"/],
+  ['twitter:card', /name="twitter:card"/],
+  ['JSON-LD', /application\/ld\+json/],
+  ['favicon', /rel="icon"/],
+  ['viewport', /name="viewport"/],
+  ['описание', /name="description" content="[^"]{50,}"/]
+];
+for (const [label, rx] of seoBits) {
+  check(`SEO: ${label}`, rx.test(html));
 }
 
-// modal shells must be inert on load (class "hidden" present on the shell itself)
-for (const id of ['easter', 'panel-modal']) {
-  const tag = (html.match(new RegExp(`<div[^>]*\\bid="${id}"[^>]*>`)) || [''])[0];
-  if (!tag) {
-    failed = true;
-    console.log(`FAIL modal #${id} not found`);
-    continue;
-  }
-  const classAttr = (tag.match(/class="([^"]*)"/) || [, ''])[1];
-  if (!/\bhidden\b/.test(classAttr)) {
-    failed = true;
-    console.log(`FAIL modal #${id} is missing the class "hidden" on load`);
-  }
-  if (!/\shidden[ >]/.test(tag + ' ')) {
-    failed = true;
-    console.log(`FAIL modal #${id} is missing the boolean hidden attribute`);
-  }
-  console.log(`OK   modal #${id} starts hidden`);
-}
+// Пасхалка скрыта по умолчанию
+check('пасхалка скрыта', /id="easter"[^>]*hidden/.test(html));
 
-// the body must never start out hidden: JS is an enhancement, not a gate
-const bodyTag = (html.match(/<body[^>]*>/) || [''])[0];
-if (/\bhide-js\b/.test(bodyTag)) {
-  failed = true;
-  console.log('FAIL <body> still carries hide-js — the page would be blank without JS');
-}
+// Мобильное меню скрыто по умолчанию
+check('меню скрыто', /id="nav-drawer"[^>]*hidden/.test(html));
 
 console.log(failed ? '\nRESULT: FAILED' : '\nRESULT: OK');
 process.exit(failed ? 1 : 0);

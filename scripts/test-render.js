@@ -1,64 +1,22 @@
-/* Headless render check: loads index.html in Chrome over the DevTools Protocol
-   and asserts the page actually paints visible content. Guards against the
-   "blank page" class of bugs caused by unclosed CSS rules or a JS-gated body.
-   No third-party dependencies — uses Node's built-in fetch and WebSocket.
-   Usage: node scripts/test-render.js   (run from the repo root) */
 const fs = require('fs');
 const path = require('path');
-const http = require('http');
 const os = require('os');
 const { spawn } = require('child_process');
 
-const root = path.resolve(__dirname, '..');
+const arg = process.argv[2] || '';
+const url = arg ? arg : 'file:///' + path.join(__dirname, '..', 'index.html').replace(/\\/g, '/');
+const isRemote = /^https?:/i.test(url);
 
-const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.xml': 'application/xml',
-  '.txt': 'text/plain; charset=utf-8'
-};
-
-function serve() {
-  return new Promise((resolve) => {
-    const server = http.createServer((req, res) => {
-      const urlPath = decodeURIComponent(req.url.split('?')[0]);
-      const rel = urlPath === '/' ? 'index.html' : urlPath.replace(/^\//, '');
-      const file = path.join(root, rel);
-      if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('not found');
-        return;
-      }
-      res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
-      res.end(fs.readFileSync(file));
-    });
-    server.listen(0, '127.0.0.1', () => resolve(server));
-  });
-}
-
-function findChrome() {
-  const candidates = [
-    path.join(process.env['PROGRAMFILES'] || '', 'Google/Chrome/Application/chrome.exe'),
+function findBrowser() {
+  const list = [
+    path.join(process.env.PROGRAMFILES || '', 'Google/Chrome/Application/chrome.exe'),
     path.join(process.env['PROGRAMFILES(X86)'] || '', 'Google/Chrome/Application/chrome.exe'),
-    path.join(process.env['LOCALAPPDATA'] || '', 'Google/Chrome/Application/chrome.exe'),
-    path.join(process.env['PROGRAMFILES'] || '', 'Microsoft/Edge/Application/msedge.exe'),
+    path.join(process.env.LOCALAPPDATA || '', 'Google/Chrome/Application/chrome.exe'),
+    path.join(process.env.PROGRAMFILES || '', 'Microsoft/Edge/Application/msedge.exe'),
     path.join(process.env['PROGRAMFILES(X86)'] || '', 'Microsoft/Edge/Application/msedge.exe')
   ];
-  for (const c of candidates) if (c && fs.existsSync(c)) return c;
-  throw new Error('Chrome or Edge not found');
-}
-
-async function waitForDevtools(port, tries = 100) {
-  for (let i = 0; i < tries; i++) {
-    try {
-      const res = await fetch(`http://127.0.0.1:${port}/json/version`);
-      if (res.ok) return await res.json();
-    } catch (_) { /* not up yet */ }
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  throw new Error('DevTools endpoint never came up');
+  for (const bin of list) if (bin && fs.existsSync(bin)) return bin;
+  throw new Error('Chrome или Edge не найдены');
 }
 
 let failed = false;
@@ -67,195 +25,222 @@ const check = (name, ok, extra) => {
   console.log(`${ok ? 'OK  ' : 'FAIL'} ${name}${extra ? ' — ' + extra : ''}`);
 };
 
-
-async function connect(port) {
-  const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
-  const pageTarget = targets.find((t) => t.type === 'page');
-  const ws = new WebSocket(pageTarget.webSocketDebuggerUrl);
-  const pending = new Map();
-  const events = [];
-  let msgId = 0;
-
-  ws.addEventListener('message', (ev) => {
-    const msg = JSON.parse(ev.data);
-    if (msg.id && pending.has(msg.id)) {
-      const { resolve, reject } = pending.get(msg.id);
-      pending.delete(msg.id);
-      if (msg.error) reject(new Error(msg.error.message));
-      else resolve(msg.result);
-    } else if (msg.method) {
-      events.push(msg);
+function connect(browser, port) {
+  return (async () => {
+    for (let i = 0; i < 120; i++) {
+      try { if ((await fetch(`http://127.0.0.1:${port}/json/version`)).ok) break; } catch (e) {}
+      await new Promise((r) => setTimeout(r, 100));
     }
-  });
 
-  await new Promise((resolve, reject) => {
-    ws.addEventListener('open', resolve, { once: true });
-    ws.addEventListener('error', reject, { once: true });
-  });
+    const target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json())
+      .find((t) => t.type === 'page');
+    const ws = new WebSocket(target.webSocketDebuggerUrl);
+    const pending = new Map();
+    const events = [];
+    let id = 0;
 
-  const send = (method, params) => new Promise((resolve, reject) => {
-    const id = ++msgId;
-    pending.set(id, { resolve, reject });
-    ws.send(JSON.stringify({ id, method, params: params || {} }));
-  });
-
-  const evaluate = async (body) => {
-    const res = await send('Runtime.evaluate', {
-      expression: `(() => { ${body} })()`,
-      returnByValue: true,
-      awaitPromise: true
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.id && pending.has(msg.id)) {
+        const { resolve, reject } = pending.get(msg.id);
+        pending.delete(msg.id);
+        if (msg.error) reject(new Error(msg.error.message));
+        else resolve(msg.result);
+      } else if (msg.method) {
+        events.push(msg);
+      }
+    };
+    await new Promise((resolve, reject) => {
+      ws.addEventListener('open', resolve, { once: true });
+      ws.addEventListener('error', reject, { once: true });
     });
-    const ex = res.exceptionDetails;
-    if (ex) throw new Error((ex.exception && ex.exception.description) || ex.text || 'evaluate failed');
-    return res.result.value;
-  };
 
-  return { ws, send, evaluate, events };
+    const send = (method, params) => new Promise((resolve, reject) => {
+      const n = ++id;
+      pending.set(n, { resolve, reject });
+      ws.send(JSON.stringify({ id: n, method, params: params || {} }));
+    });
+
+    const evaluate = async (body) => {
+      const res = await send('Runtime.evaluate', {
+        expression: `(() => { ${body} })()`,
+        returnByValue: true,
+        awaitPromise: true
+      });
+      if (res.exceptionDetails) {
+        const d = res.exceptionDetails;
+        throw new Error((d.exception && d.exception.description) || d.text || 'ошибка evaluate');
+      }
+      return res.result.value;
+    };
+
+    return { ws, events, send, evaluate };
+  })();
 }
 
 (async () => {
-  const server = await serve();
-  const base = `http://127.0.0.1:${server.address().port}/`;
-  const port = 9333;
-  const userDataDir = path.join(os.tmpdir(), 'exeyta-render-' + Date.now());
-
-  const chrome = spawn(findChrome(), [
-    '--headless=new',
-    '--disable-gpu',
-    '--no-first-run',
-    '--no-default-browser-check',
-    '--hide-scrollbars',
-    `--remote-debugging-port=${port}`,
-    `--user-data-dir=${userDataDir}`,
-    '--window-size=1440,900',
+  const port = 9340;
+  const chrome = spawn(findBrowser(), [
+    '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+    '--hide-scrollbars', `--remote-debugging-port=${port}`,
+    `--user-data-dir=${path.join(os.tmpdir(), 'exeyta-' + Date.now())}`,
     'about:blank'
   ], { stdio: 'ignore' });
 
-  const cleanup = () => {
-    try { chrome.kill(); } catch (_) { /* ignore */ }
-    try { server.close(); } catch (_) { /* ignore */ }
-  };
-
   try {
-    await waitForDevtools(port);
-    const { ws, send, evaluate, events } = await connect(port);
+    const { ws, events, send, evaluate } = await connect(chrome, port);
 
     await send('Runtime.enable');
     await send('Network.enable');
     await send('Page.enable');
+    if (isRemote) await send('Network.setCacheDisabled', { cacheDisabled: true });
+
+    // ---------- десктоп 1440 ----------
     await send('Emulation.setDeviceMetricsOverride', {
       width: 1440, height: 900, deviceScaleFactor: 1, mobile: false
     });
+    await send('Page.navigate', { url });
 
-    await send('Page.navigate', { url: base });
-
-    for (let i = 0; i < 120; i++) {
-      const ready = await evaluate('return document.readyState;');
-      if (ready === 'complete') break;
+    for (let i = 0; i < 200; i++) {
+      if (await evaluate('return document.readyState;') === 'complete') break;
       await new Promise((r) => setTimeout(r, 50));
     }
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 700));
+
+    const bad = events
+      .filter((e) => e.method === 'Network.responseReceived' && e.params.response.status >= 400)
+      .map((e) => `${e.params.response.status} ${e.params.response.url}`);
+    check('нет битых запросов', bad.length === 0, bad.join(', '));
 
     const consoleErrors = events
       .filter((e) => e.method === 'Runtime.consoleAPICalled' && e.params.type === 'error')
       .map((e) => (e.params.args || []).map((a) => a.value || a.description || '').join(' '));
-    const badResponses = events
-      .filter((e) => e.method === 'Network.responseReceived' && e.params.response.status >= 400)
-      .map((e) => `${e.params.response.status} ${e.params.response.url}`);
+    check('нет ошибок в консоли', consoleErrors.length === 0, consoleErrors.join(' | '));
 
-    check('no failed network requests', badResponses.length === 0, badResponses.join(', '));
-    check('no console errors', consoleErrors.length === 0, consoleErrors.join(' | '));
+    const overflow = await evaluate(`
+      const d = document.documentElement;
+      return { doc: d.scrollWidth, win: d.clientWidth };
+    `);
+    check('нет горизонтальной прокрутки', overflow.doc <= overflow.win + 1,
+      `${overflow.doc} > ${overflow.win}`);
 
-    // The hero heading must be painted with a real box.
     const hero = await evaluate(`
-      const el = document.querySelector('.hero-title');
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      const s = getComputedStyle(el);
-      return { w: Math.round(r.width), h: Math.round(r.height),
-               visibility: s.visibility, display: s.display, opacity: s.opacity };
+      const h1 = document.querySelector('h1');
+      const box = h1.getBoundingClientRect();
+      const lh = parseFloat(getComputedStyle(h1).lineHeight) || box.height;
+      return { w: Math.round(box.width), h: Math.round(box.height), lines: Math.round(box.height / lh) };
     `);
-    check('hero title exists', Boolean(hero));
-    if (hero) {
-      check('hero title has non-zero box', hero.w > 0 && hero.h > 0, `${hero.w}x${hero.h}`);
-      check('hero title is visible',
-        hero.visibility === 'visible' && hero.display !== 'none' && hero.opacity !== '0');
-    }
+    check('h1 отрисован', hero.w > 0 && hero.h > 0, `${hero.w}x${hero.h}`);
+    check('h1 не больше трёх строк', hero.lines > 0 && hero.lines <= 3, `${hero.lines} строк`);
 
-    // Exactly one panel visible; the rest must be display:none.
-    const panels = await evaluate(`
-      return [...document.querySelectorAll('.panel')].map((p) => {
-        const s = getComputedStyle(p);
-        return { id: p.id, shown: s.display !== 'none' && s.visibility !== 'hidden' };
-      });
+    const header = await evaluate(`
+      const h = document.querySelector('.site-header').getBoundingClientRect();
+      const logo = document.querySelector('.logo').getBoundingClientRect();
+      const cta = document.querySelector('.header-cta .btn').getBoundingClientRect();
+      return { height: Math.round(h.height), sameRow: Math.abs(logo.top - cta.top) < 20 };
     `);
-    const shown = panels.filter((p) => p.shown);
-    check('exactly one panel is visible on load', shown.length === 1,
-      `visible=${shown.map((p) => p.id).join(',')} of ${panels.length}`);
-    check('the visible panel is panel-home', shown.length === 1 && shown[0].id === 'panel-home');
+    check('шапка в одну строку', header.sameRow && header.height <= 72, `${header.height}px`);
 
-    // Header must sit above the content and keep its items on one row.
-    const layout = await evaluate(`
-      const header = document.querySelector('.header').getBoundingClientRect();
-      const title = document.querySelector('.hero-title').getBoundingClientRect();
-      const brand = document.querySelector('.brand').getBoundingClientRect();
-      const tabs = document.querySelector('.tabs-rail').getBoundingClientRect();
-      const cta = document.querySelector('.header-actions .btn').getBoundingClientRect();
-      return {
-        headerHeight: Math.round(header.height),
-        heroTop: Math.round(title.top),
-        sameRow: Math.abs(brand.top - tabs.top) < 12 && Math.abs(brand.top - cta.top) < 12
-      };
+    const shot = await evaluate(`
+      const img = document.querySelector('.hero-shot img');
+      return { complete: img.complete, w: img.naturalWidth, h: img.naturalHeight };
     `);
-    check('header is 80px tall', layout.headerHeight === 80, `${layout.headerHeight}px`);
-    check('brand, tabs and CTA sit on one row', layout.sameRow);
-    check('hero sits below the header', layout.heroTop > 80, `heroTop=${layout.heroTop}`);
+    check('скриншот лаунчера загрузился', shot.complete && shot.w > 0, `${shot.w}x${shot.h}`);
 
-    // Modals must be inert on load.
-    const modals = await evaluate(`
-      return ['easter', 'panel-modal'].map((id) => {
+
+    const sections = await evaluate(`
+      return ['features', 'screens', 'install', 'faq'].map((id) => {
         const el = document.getElementById(id);
-        return { id, display: el ? getComputedStyle(el).display : 'missing' };
+        if (!el) return { id, ok: false, h: 0 };
+        return { id, ok: el.getBoundingClientRect().height > 100,
+                 h: Math.round(el.getBoundingClientRect().height) };
       });
     `);
-    for (const m of modals) check(`modal #${m.id} is hidden`, m.display === 'none', m.display);
+    for (const item of sections) check(`секция #${item.id} отрисована`, item.ok, item.h + 'px');
 
-    // Switching tabs must swap panels.
-    const tabSwitch = await evaluate(`
-      const tab = [...document.querySelectorAll('.tab')]
-        .find((t) => t.getAttribute('aria-controls') === 'panel-download');
-      tab.click();
+    const hidden = await evaluate(`
       return {
-        downloadShown: getComputedStyle(document.getElementById('panel-download')).display !== 'none',
-        homeHidden: getComputedStyle(document.getElementById('panel-home')).display === 'none'
+        easter: getComputedStyle(document.getElementById('easter')).display,
+        drawer: getComputedStyle(document.getElementById('nav-drawer')).display
       };
     `);
-    check('clicking "Скачать" shows panel-download', tabSwitch.downloadShown);
-    check('clicking "Скачать" hides panel-home', tabSwitch.homeHidden);
+    check('пасхалка скрыта при загрузке', hidden.easter === 'none', hidden.easter);
+    check('меню скрыто на десктопе', hidden.drawer === 'none', hidden.drawer);
 
-    // No page-level horizontal overflow.
-    const overflow = await evaluate(
-      'return document.documentElement.scrollWidth - document.documentElement.clientWidth;'
-    );
-    check('no horizontal overflow', overflow <= 1, `overflow=${overflow}px`);
-
-    // The hero artwork must have decoded with real dimensions.
-    const img = await evaluate(`
-      const el = document.querySelector('.hero-mock img');
-      return el ? { complete: el.complete, w: el.naturalWidth, h: el.naturalHeight } : null;
+    const faq = await evaluate(`
+      const first = document.querySelector('.faq-list details');
+      const before = first.open;
+      first.querySelector('summary').click();
+      const after = first.open;
+      first.open = false;
+      return { before, after };
     `);
-    check('hero image loaded', Boolean(img) && img.complete && img.w > 0 && img.h > 0,
-      img ? `${img.w}x${img.h}` : 'missing');
+    check('вопрос в FAQ раскрывается', faq.before === false && faq.after === true);
+
+    const easterWorks = await evaluate(`
+      const el = document.getElementById('easter');
+      el.hidden = false;
+      const shown = getComputedStyle(el).display !== 'none';
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      const closed = getComputedStyle(el).display === 'none';
+      return { shown, closed };
+    `);
+    check('пасхалка открывается', easterWorks.shown);
+    check('Escape закрывает пасхалку', easterWorks.closed);
+
+    const invisible = await evaluate(`
+      for (const d of document.querySelectorAll('.faq-list details')) d.open = true;
+      const els = [...document.querySelectorAll('.faq-list p, .check-list, .steps h3, .feature p')];
+      return els.filter((el) => {
+        const s = getComputedStyle(el);
+        return s.visibility === 'hidden' || parseFloat(s.opacity) === 0;
+      }).length;
+    `);
+    check('нет невидимого контента', invisible === 0, `${invisible} скрыто`);
+
+
+    // ---------- мобильный 390 ----------
+    await send('Emulation.setDeviceMetricsOverride', {
+      width: 390, height: 844, deviceScaleFactor: 2, mobile: true
+    });
+    await send('Page.navigate', { url });
+    await new Promise((r) => setTimeout(r, 900));
+
+    const mobile = await evaluate(`
+      const nav = getComputedStyle(document.querySelector('.nav')).display;
+      const toggle = getComputedStyle(document.querySelector('.nav-toggle')).display;
+      const d = document.documentElement;
+      return { nav, toggle, over: d.scrollWidth - d.clientWidth };
+    `);
+    check('навигация скрыта на мобильном', mobile.nav === 'none', mobile.nav);
+    check('кнопка меню видна на мобильном', mobile.toggle !== 'none', mobile.toggle);
+    check('на мобильном нет прокрутки вбок', mobile.over <= 1, `перелив ${mobile.over}px`);
+
+    const menu = await evaluate(`
+      const btn = document.getElementById('nav-toggle');
+      const drawer = document.getElementById('nav-drawer');
+      btn.click();
+      const opened = !drawer.hidden;
+      btn.click();
+      return { opened, closed: drawer.hidden };
+    `);
+    check('мобильное меню открывается', menu.opened);
+    check('мобильное меню закрывается', menu.closed);
+
+    const tapTargets = await evaluate(`
+      const els = [...document.querySelectorAll('.nav-toggle, .header-cta .btn, .faq-list summary')];
+      return els.filter((el) => el.getBoundingClientRect().height < 32).length;
+    `);
+    check('элементы управления не мельче 32px', tapTargets === 0, `${tapTargets} мелких`);
 
     ws.close();
   } finally {
-    cleanup();
+    try { chrome.kill(); } catch (e) {}
   }
 
   console.log(failed ? '\nRESULT: FAILED' : '\nRESULT: OK');
-  process.exit(failed ? 1 : 0);
+  process.exitCode = failed ? 1 : 0;
 })().catch((err) => {
   console.error(err);
-  process.exit(1);
+  process.exitCode = 1;
 });
-

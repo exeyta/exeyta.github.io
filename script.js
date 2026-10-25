@@ -1,216 +1,90 @@
 (function () {
   'use strict';
 
-  var tabs = document.querySelectorAll('.tab');
-  var panels = document.querySelectorAll('.panel');
-  var modal = document.getElementById('panel-modal');
-  var modalTitle = document.getElementById('panel-modal-title');
-  var modalBody = document.getElementById('panel-modal-body');
-  var modalDl = document.getElementById('panel-modal-dl');
-  var modalCloses = document.querySelectorAll('[data-modal-close]');
-  var easterEl = document.getElementById('easter');
   var yearEl = document.getElementById('year');
-  var mobileMenuBtn = document.getElementById('mobile-menu');
-  var mobilePanel = document.getElementById('mobile-panel');
-  var mobileItems = document.querySelectorAll('.mobile-item[data-tab-link]');
+  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
-  function showPanel(el) {
-    if (!el) return;
-    panels.forEach(function (p) {
-      p.classList.remove('is-active');
-      p.classList.add('hidden');
-      p.hidden = true;
-      p.setAttribute('tabindex', '-1');
-    });
-    el.classList.remove('hidden');
-    el.classList.add('is-active');
-    el.hidden = false;
-    el.setAttribute('tabindex', '0');
-    el.focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Мобильное меню
+  var toggle = document.getElementById('nav-toggle');
+  var drawer = document.getElementById('nav-drawer');
+
+  function closeDrawer() {
+    if (!toggle || !drawer) return;
+    drawer.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', 'Открыть меню');
   }
 
-  function activateTab(tab) {
-    if (!tab) return;
-    tabs.forEach(function (t) {
-      t.classList.remove('is-active');
-      t.setAttribute('aria-selected', 'false');
-      t.setAttribute('tabindex', '-1');
+  if (toggle && drawer) {
+    toggle.addEventListener('click', function () {
+      var open = toggle.getAttribute('aria-expanded') === 'true';
+      drawer.hidden = open;
+      toggle.setAttribute('aria-expanded', String(!open));
+      toggle.setAttribute('aria-label', open ? 'Открыть меню' : 'Закрыть меню');
     });
-    tab.classList.add('is-active');
-    tab.setAttribute('aria-selected', 'true');
-    tab.setAttribute('tabindex', '0');
-    updateInk(tab);
-  }
 
-  function updateInk(tab) {
-    var ink = document.querySelector('.tab-ink');
-    var rail = document.querySelector('.tabs-rail');
-    if (!ink || !rail || !tab) return;
-    var rect = tab.getBoundingClientRect();
-    var railRect = rail.getBoundingClientRect();
-    ink.style.width = rect.width + 'px';
-    ink.style.transform = 'translateX(' + (rect.left - railRect.left) + 'px)';
-  }
-
-  function moveFocus(dir) {
-    var active = document.querySelector('.tab.is-active');
-    var index = Array.prototype.indexOf.call(tabs, active);
-    var next = (index + dir + tabs.length) % tabs.length;
-    tabs[next].focus();
-  }
-
-  tabs.forEach(function (tab) {
-    tab.addEventListener('click', function () {
-      var panel = document.getElementById(this.getAttribute('aria-controls'));
-      activateTab(this);
-      showPanel(panel);
+    drawer.addEventListener('click', function (e) {
+      if (e.target.closest('a')) closeDrawer();
     });
-    tab.addEventListener('keydown', function (e) {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); moveFocus(1); }
-      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); moveFocus(-1); }
-      else if (e.key === 'Home') { e.preventDefault(); tabs[0].focus(); }
-      else if (e.key === 'End') { e.preventDefault(); tabs[tabs.length - 1].focus(); }
-    });
-  });
 
-  if (mobileMenuBtn && mobilePanel) {
-    mobileMenuBtn.addEventListener('click', function () {
-      var expanded = mobileMenuBtn.getAttribute('aria-expanded') === 'true';
-      mobileMenuBtn.setAttribute('aria-expanded', String(!expanded));
-      mobilePanel.hidden = expanded;
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > 760) closeDrawer();
     });
   }
 
-  mobileItems.forEach(function (item) {
-    item.addEventListener('click', function () {
-      var panel = document.getElementById(this.getAttribute('data-tab-link'));
-      var tab = document.querySelector('.tab[aria-controls="' + this.getAttribute('data-tab-link') + '"]');
-      if (mobilePanel) mobilePanel.hidden = true;
-      if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'false');
-      if (panel && tab) {
-        activateTab(tab);
-        showPanel(panel);
-      }
-    });
-  });
+  // Пасхалка: Konami-код или двойное нажатие 6, затем 7
+  var easter = document.getElementById('easter');
+  var konami = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
+  var seq = 0;
+  var digits = [];
+  var resetTimer = 0;
 
-  function closeModals() {
-    if (modal) {
-      modal.hidden = true;
-      modal.classList.remove('is-open');
-      modal.classList.add('hidden');
-      modal.setAttribute('aria-modal', 'false');
-    }
-    if (easterEl) {
-      easterEl.hidden = true;
-      easterEl.classList.remove('is-open');
-      easterEl.classList.add('hidden');
-      easterEl.setAttribute('aria-modal', 'false');
-    }
+  function openEaster() {
+    if (!easter) return;
+    easter.hidden = false;
+    document.body.style.overflow = 'hidden';
+    var closeBtn = easter.querySelector('[data-easter-close]');
+    if (closeBtn) closeBtn.focus();
+  }
+
+  function closeEaster() {
+    if (!easter) return;
+    easter.hidden = true;
     document.body.style.overflow = '';
   }
 
-  var modalTriggers = document.querySelectorAll('[data-modal-open]');
-  modalTriggers.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var target = this.getAttribute('data-modal-open');
-      var panel = document.getElementById(target);
-      var tab = document.querySelector('.tab[aria-controls="' + target + '"]');
-      if (!panel || !tab) return;
-      modalTitle.textContent = panel.getAttribute('data-panel') || '';
-      var lead = panel.querySelector('p, .section-lead');
-      modalBody.textContent = lead ? lead.textContent : '';
-      modalDl.href = 'https://github.com/exeyta/exeyta-launcher/releases/latest/download/ExeytaSetup.exe';
-      modal.hidden = false;
-      modal.classList.remove('hidden');
-      modal.classList.add('is-open');
-      modal.setAttribute('aria-modal', 'true');
-      document.body.style.overflow = 'hidden';
-      var closeBtn = modal.querySelector('[data-modal-close]');
-      if (closeBtn) closeBtn.focus();
-    });
-  });
-  modalCloses.forEach(function (btn) {
-    btn.addEventListener('click', closeModals);
-  });
-
-  if (modal) {
-    modal.addEventListener('click', function (e) {
-      if (e.target === modal || e.target === modal.querySelector('.modal-bg')) closeModals();
+  if (easter) {
+    easter.addEventListener('click', function (e) {
+      if (e.target === easter || e.target.closest('[data-easter-close]')) closeEaster();
     });
   }
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeModals();
-  });
-
-  var konami = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
-  var kIndex = 0;
-  var hits = 0;
-  var timer = 0;
-
-  function openEaster() {
-    if (easterEl) {
-      easterEl.hidden = false;
-      easterEl.classList.remove('hidden');
-      easterEl.classList.add('is-open');
-      easterEl.setAttribute('aria-modal', 'true');
-      document.body.style.overflow = 'hidden';
-      var closeBtn = easterEl.querySelector('.easter-close');
-      if (closeBtn) closeBtn.focus();
+    if (e.key === 'Escape') {
+      closeEaster();
+      closeDrawer();
+      return;
     }
-  }
 
-  document.addEventListener('keydown', function (e) {
-    if (e.which === konami[kIndex]) {
-      kIndex++;
-      if (kIndex === konami.length) { kIndex = 0; openEaster(); }
-    } else {
-      kIndex = 0;
-    }
-    if (e.which === 54 || e.which === 102) {
-      hits++;
-      if (hits === 1) timer = setTimeout(function () { hits = 0; }, 2600);
-      if (hits === 2) { clearTimeout(timer); hits = 0; openEaster(); }
-    } else if (e.which === 55 || e.which === 103) {
-      if (hits === 1) { clearTimeout(timer); hits = 0; openEaster(); }
-      else { hits = 0; }
-    }
-  });
-
-  function revealOnScroll() {
-    var reveals = document.querySelectorAll('.reveal:not(.is-in)');
-    var windowHeight = window.innerHeight;
-    var revealPoint = 150;
-    reveals.forEach(function (el) {
-      if (el.getBoundingClientRect().top < windowHeight - revealPoint) {
-        el.classList.add('is-in');
+    if (e.keyCode === konami[seq]) {
+      seq += 1;
+      if (seq === konami.length) {
+        seq = 0;
+        openEaster();
       }
-    });
-  }
+    } else {
+      seq = 0;
+    }
 
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    window.addEventListener('scroll', revealOnScroll, { passive: true });
-  }
-  revealOnScroll();
-
-  window.addEventListener('load', function () {
-    var activeTab = document.querySelector('.tab.is-active');
-    if (activeTab) {
-      updateInk(activeTab);
-      var activePanel = document.getElementById(activeTab.getAttribute('aria-controls'));
-      if (activePanel) showPanel(activePanel);
+    if (e.key === '6' || e.key === '7') {
+      digits.push(e.key);
+      if (digits.length > 2) digits = digits.slice(-2);
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(function () { digits = []; }, 1500);
+      if (digits.join('') === '67') {
+        digits = [];
+        openEaster();
+      }
     }
   });
-  window.addEventListener('resize', function () {
-    var activeTab = document.querySelector('.tab.is-active');
-    if (activeTab) updateInk(activeTab);
-  });
-
-  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
-
-  document.documentElement.classList.remove('no-js');
-  document.documentElement.classList.add('js-ready');
-  document.body.classList.remove('hide-js');
 })();

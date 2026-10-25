@@ -1,91 +1,104 @@
-/* Live checks that every asset, id and hook script.js / index.html depend on
-   actually exists, plus CSS brace balance.
-   Usage: node scripts/check-assets.js   (run from the repo root) */
+/* Проверка ассетов: баланс CSS, существование файлов, связки JS ↔ HTML. */
 const fs = require('fs');
 const path = require('path');
 
-const root = path.resolve(__dirname, '..');
+const root = path.join(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 const exists = (f) => fs.existsSync(path.join(root, f));
 
+const html = read('index.html');
 const css = read('style.css');
 const js = read('script.js');
-const html = read('index.html');
 
 let failed = false;
-const fail = (msg) => {
-  failed = true;
-  console.log('FAIL ' + msg);
+const check = (name, ok, extra) => {
+  if (!ok) failed = true;
+  console.log(`${ok ? 'OK  ' : 'FAIL'} ${name}${extra ? ' — ' + extra : ''}`);
 };
 
-/* --- CSS: strip comments and strings, then count braces and parens --- */
-const cssStripped = css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/"[^"\n]*"|'[^'\n]*'/g, '');
-const openBraces = (cssStripped.match(/\{/g) || []).length;
-const closeBraces = (cssStripped.match(/\}/g) || []).length;
-console.log(`css braces open=${openBraces} close=${closeBraces}`);
-if (openBraces !== closeBraces) fail('unbalanced CSS braces');
-
-const openParens = (cssStripped.match(/\(/g) || []).length;
-const closeParens = (cssStripped.match(/\)/g) || []).length;
-console.log(`css parens open=${openParens} close=${closeParens}`);
-if (openParens !== closeParens) fail('unbalanced CSS parentheses');
-
-/* --- files referenced by index.html must exist on disk --- */
-const refs = [...html.matchAll(/(?:href|src)="(?!#|https?:|mailto:|tel:)([^"?]+)"/g)].map((m) => m[1]);
-for (const ref of [...new Set(refs)]) {
-  if (!exists(ref)) fail(`index.html references missing file: ${ref}`);
+// --- CSS: баланс скобок и пустые правила ---
+let depth = 0;
+let bad = null;
+for (let i = 0; i < css.length; i++) {
+  if (css[i] === '{') depth++;
+  else if (css[i] === '}') {
+    depth--;
+    if (depth < 0) { bad = i; break; }
+  }
 }
-console.log(`local asset references checked: ${[...new Set(refs)].length}`);
+check('CSS: скобки сбалансированы', depth === 0 && bad === null,
+  bad !== null ? `лишняя } на позиции ${bad}` : depth !== 0 ? `незакрытых блоков: ${depth}` : '');
 
-/* --- CSS classes the markup actually uses must be styled --- */
-const requiredCss = [
-  '.header', '.header-inner', '.brand', '.tabs-rail', '.tab', '.tab-ink',
-  '.panel', '.panel.is-active', '.section', '.hero', '.hero-title', '.hero-mock',
-  '.btn', '.btn-primary', '.btn-ghost', '.card', '.modal', '.modal-card',
-  '.modal-bg', '.modal-body', '.modal-actions', '.easter', '.easter-card',
-  '.footer', '.visually-hidden', '.mobile-panel', '.editor-pane'
-];
-for (const sel of requiredCss) {
-  if (!css.includes(sel)) fail(`style.css is missing ${sel}`);
+const parens = (css.match(/\(/g) || []).length - (css.match(/\)/g) || []).length;
+check('CSS: скобки в функциях сбалансированы', parens === 0, `разница ${parens}`);
+
+// --- CSS: каждый класс из HTML должен иметь правило или быть служебным ---
+const htmlClasses = new Set();
+for (const m of html.matchAll(/class="([^"]+)"/g)) {
+  m[1].trim().split(/\s+/).forEach((c) => c && htmlClasses.add(c));
 }
 
-/* --- every id referenced by script.js must exist in index.html --- */
-const ids = [...js.matchAll(/getElementById\('([^']+)'\)/g)].map((m) => m[1]);
-for (const id of [...new Set(ids)]) {
-  if (!new RegExp(`id="${id}"`).test(html)) fail(`script.js wants #${id}, not found in index.html`);
-}
-console.log(`script.js id references checked: ${[...new Set(ids)].length}`);
+const unstyled = [...htmlClasses].filter(
+  (c) => !new RegExp(`\\.${c.replace(/[-]/g, '\\-')}(?![\\w-])`).test(css)
+);
+check('все классы из HTML есть в CSS', unstyled.length === 0, unstyled.join(', '));
 
-/* --- markup hooks script.js queries must be present --- */
+// --- CSS: каждый переменная темы используется и объявлена ---
+const declared = new Set([...css.matchAll(/^\s*(--[\w-]+):/gm)].map((m) => m[1]));
+const used = new Set([...css.matchAll(/var\((--[\w-]+)\)/g)].map((m) => m[1]));
+const undef = [...used].filter((v) => !declared.has(v));
+check('CSS: нет ссылок на необъявленные переменные', undef.length === 0, undef.join(', '));
+
+const unusedVars = [...declared].filter((v) => !used.has(v));
+check('CSS: нет мёртвых переменных', unusedVars.length === 0, unusedVars.join(', '));
+
+// --- Локальные файлы существуют ---
+const localFiles = new Set();
+for (const m of html.matchAll(/(?:src|href)="([^"#:][^"]*)"/g)) {
+  const ref = m[1];
+  if (/^(https?:|mailto:|\/\/)/.test(ref)) continue;
+  localFiles.add(ref);
+}
+const missingFiles = [...localFiles].filter((f) => !exists(f));
+check('все локальные файлы на месте', missingFiles.length === 0, missingFiles.join(', '));
+
+// --- Связки JS ↔ HTML ---
+const idsInHtml = new Set([...html.matchAll(/id="([^"]+)"/g)].map((m) => m[1]));
+const idsInJs = [...js.matchAll(/getElementById\('([^']+)'\)/g)].map((m) => m[1]);
+const missingIds = idsInJs.filter((id) => !idsInHtml.has(id));
+check('все getElementById находят элемент', missingIds.length === 0, missingIds.join(', '));
+
+const queried = [...js.matchAll(/querySelector(?:All)?\('([^']+)'\)/g)].map((m) => m[1]);
+const orphanSelectors = queried.filter((sel) => {
+  const cls = sel.match(/^\.([\w-]+)/);
+  if (cls) return !new RegExp(`class="[^"]*\\b${cls[1]}\\b`).test(html);
+  const attr = sel.match(/^\[([\w-]+)/);
+  if (attr) {
+    // атрибут может быть с якорем вроде [data-easter-close] или булевым [hidden]
+    return !new RegExp(`\\b${attr[1]}(?:=|\\s|>)`).test(html);
+  }
+  return false;
+});
+check('селекторы в JS есть в HTML', orphanSelectors.length === 0, orphanSelectors.join(', '));
+
+// --- Обязательные хуки стилей по смыслу ---
 const hooks = [
-  ['class="tab', /class="tab/],
-  ['class="panel', /class="panel/],
-  ['data-tab-link', /data-tab-link=/],
-  ['data-modal-open', /data-modal-open=/],
-  ['data-modal-close', /data-modal-close/],
-  ['class="tab-ink', /class="tab-ink"/]
+  ['.hero', 'секция первого экрана'],
+  ['.feature-grid', 'сетка возможностей'],
+  ['.settings-card', 'превью настроек'],
+  ['.steps', 'шаги установки'],
+  ['.faq-list', 'список вопросов'],
+  ['.site-footer', 'футер'],
+  ['.easter', 'пасхалка'],
+  ['.nav-toggle', 'кнопка меню']
 ];
-for (const [name, re] of hooks) {
-  if (!re.test(html)) fail(`index.html is missing hook ${name}`);
+for (const [sel, label] of hooks) {
+  check(`CSS: ${sel} (${label})`, css.includes(sel + ' ') || css.includes(sel + '{') || css.includes(sel + ','));
 }
 
-/* --- SEO surface must not regress --- */
-const mustKeep = [
-  'https://github.com/exeyta/exeyta-launcher/releases/latest/download/ExeytaSetup.exe',
-  'https://t.me/exeyta',
-  'https://github.com/exeyta/exeyta-launcher',
-  'https://t.me/ouroptions',
-  'assets/launcher-ui.svg',
-  'assets/favicon.svg',
-  'rel="canonical" href="https://exeyta.github.io/"',
-  'name="google-site-verification"',
-  'application/ld+json',
-  'property="og:title"'
-];
-for (const needle of mustKeep) {
-  if (!html.includes(needle)) fail(`index.html lost: ${needle}`);
-}
+// --- Ресурсы, на которые ссылаются соцсети, существуют ---
+const ogImage = (html.match(/property="og:image" content="https:\/\/exeyta\.github\.io\/([^"]+)"/) || [])[1];
+check('og:image указывает на существующий файл', Boolean(ogImage) && exists(ogImage), ogImage || 'нет');
 
 console.log(failed ? '\nRESULT: FAILED' : '\nRESULT: OK');
 process.exit(failed ? 1 : 0);
-
