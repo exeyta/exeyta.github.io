@@ -257,7 +257,7 @@ section { padding: 110px 24px 80px; max-width: 1200px; margin: 0 auto; }
 
 /* Panels switching */
 .panel { display: none; }
-.panel.is-active { display: block; }
+.panel.is-active { display: block !important; }
 
 /* Cards */
 .feature-grid {
