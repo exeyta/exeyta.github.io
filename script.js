@@ -179,7 +179,11 @@
 
   window.addEventListener('load', function () {
     var activeTab = document.querySelector('.tab.is-active');
-    if (activeTab) updateInk(activeTab);
+    if (activeTab) {
+      updateInk(activeTab);
+      var activePanel = document.getElementById(activeTab.getAttribute('aria-controls'));
+      if (activePanel) showPanel(activePanel);
+    }
   });
   window.addEventListener('resize', function () {
     var activeTab = document.querySelector('.tab.is-active');
