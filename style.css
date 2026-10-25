@@ -447,6 +447,7 @@ section { padding: 110px 24px 80px; max-width: 1200px; margin: 0 auto; }
   .hero-glow-a, .hero-glow-b { animation: none; }
 }
 
+.install-steps li::before {
   content: counter(step-counter);
   counter-increment: step-counter;
   position: absolute; left: 0; top: 2px;
@@ -470,6 +471,7 @@ section { padding: 110px 24px 80px; max-width: 1200px; margin: 0 auto; }
 .card h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; margin-bottom: 10px; color: var(--text); }
 .card p { color: var(--text-dim); font-size: 0.95rem; line-height: 1.6; }
 
+.hero-mock {
   margin: 0 auto 40px;
   filter: drop-shadow(0 24px 40px rgba(0,0,0,0.5));
   animation: float 6s ease-in-out infinite;
