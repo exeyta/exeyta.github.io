@@ -53,8 +53,13 @@ ul { list-style: none; }
 }
 .header-inner {
   max-width: 1200px;
+  height: 100%;
   margin: 0 auto;
   padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 .hero { position: relative; padding-top: 0; isolation: isolate; }
 .hero-deco { position: absolute; inset: 0; z-index: -1; overflow: hidden; border-radius: 32px; }
@@ -156,6 +161,18 @@ ul { list-style: none; }
 .editor-preview { max-width: 520px; margin: 0 auto; }
 .editor-pane {
   background: #08060c;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, monospace;
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: #c9bcd8;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  min-height: 220px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
 .modal {
   position: fixed;
   inset: 0;
@@ -165,6 +182,8 @@ ul { list-style: none; }
   justify-content: center;
   padding: 24px;
 }
+/* Author-level [hidden] wins over the .modal display:flex defaults. */
+.modal[hidden], .easter[hidden] { display: none !important; }
 .modal.is-open { display: flex !important; }
 .modal.hidden { display: none !important; }
 .modal-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 1; }
@@ -275,15 +294,6 @@ ul { list-style: none; }
   .easter-rays, .easter-mesh-a, .easter-mesh-b, .modal-mesh-a, .modal-mesh-b { animation: none; display: none; }
   .hero-glow-a, .hero-glow-b { animation: none; }
 }
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.9rem;
-  color: var(--text-dim);
-  overflow: auto;
-  max-height: 400px;
-}
 
 .install-steps { padding: 60px 0; }
 .install-steps ol { counter-reset: step-counter; display: flex; flex-direction: column; gap: 24px; max-width: 700px; margin: 0 auto; }
@@ -303,12 +313,6 @@ ul { list-style: none; }
   width: 20px; height: 20px; border-radius: 50%;
   background: var(--grad); color: #000; font-weight: 700; font-size: 0.85rem;
   display: flex; align-items: center; justify-content: center;
-}
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
 }
 .brand {
   display: flex;

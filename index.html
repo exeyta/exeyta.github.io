@@ -11,6 +11,8 @@
   <meta name="author" content="Exeyta" />
   <title>Exeyta Launcher — лаунчер Minecraft с редактором скинов</title>
   <link rel="canonical" href="https://exeyta.github.io/" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="assets/favicon.svg" />
   <link rel="alternate" href="https://exeyta.github.io/" hreflang="ru" />
   <link rel="alternate" href="https://exeyta.github.io/" hreflang="en" />
   <meta property="og:type" content="website" />
@@ -57,7 +59,7 @@
   </noscript>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="hide-js">  <canvas id="particles" class="canvas-bg" aria-hidden="true"></canvas>
+<body>  <canvas id="particles" class="canvas-bg" aria-hidden="true"></canvas>
 
   <header class="header" role="banner">
     <div class="header-inner">
@@ -181,7 +183,7 @@
     </section>
   </div>
   <!-- Easter egg modal -->
-  <div class="modal easter hidden" id="easter" role="dialog" aria-modal="true" aria-labelledby="easter-title">
+  <div class="modal easter hidden" id="easter" role="dialog" aria-modal="true" aria-labelledby="easter-title" hidden>
     <span class="easter-bg" aria-hidden="true">
       <span class="easter-mesh easter-mesh-a"></span>
       <span class="easter-mesh easter-mesh-b"></span>
@@ -201,7 +203,7 @@
   </div>
 
   <!-- Section modal -->
-  <div class="modal modal-panel hidden" id="panel-modal" role="dialog" aria-modal="true" aria-labelledby="panel-modal-title">
+  <div class="modal modal-panel hidden" id="panel-modal" role="dialog" aria-modal="true" aria-labelledby="panel-modal-title" hidden>
     <span class="modal-bg" aria-hidden="true">
       <span class="modal-mesh modal-mesh-a"></span>
       <span class="modal-mesh modal-mesh-b"></span>

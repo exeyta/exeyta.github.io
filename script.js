@@ -18,9 +18,11 @@
     if (!el) return;
     panels.forEach(function (p) {
       p.classList.remove('is-active');
+      p.classList.add('hidden');
       p.hidden = true;
       p.setAttribute('tabindex', '-1');
     });
+    el.classList.remove('hidden');
     el.classList.add('is-active');
     el.hidden = false;
     el.setAttribute('tabindex', '0');
@@ -94,8 +96,18 @@
   });
 
   function closeModals() {
-    if (modal) { modal.hidden = true; modal.setAttribute('aria-modal', 'false'); }
-    if (easterEl) { easterEl.hidden = true; easterEl.setAttribute('aria-modal', 'false'); }
+    if (modal) {
+      modal.hidden = true;
+      modal.classList.remove('is-open');
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-modal', 'false');
+    }
+    if (easterEl) {
+      easterEl.hidden = true;
+      easterEl.classList.remove('is-open');
+      easterEl.classList.add('hidden');
+      easterEl.setAttribute('aria-modal', 'false');
+    }
     document.body.style.overflow = '';
   }
 
@@ -111,6 +123,8 @@
       modalBody.textContent = lead ? lead.textContent : '';
       modalDl.href = 'https://github.com/exeyta/exeyta-launcher/releases/latest/download/ExeytaSetup.exe';
       modal.hidden = false;
+      modal.classList.remove('hidden');
+      modal.classList.add('is-open');
       modal.setAttribute('aria-modal', 'true');
       document.body.style.overflow = 'hidden';
       var closeBtn = modal.querySelector('[data-modal-close]');
@@ -139,6 +153,8 @@
   function openEaster() {
     if (easterEl) {
       easterEl.hidden = false;
+      easterEl.classList.remove('hidden');
+      easterEl.classList.add('is-open');
       easterEl.setAttribute('aria-modal', 'true');
       document.body.style.overflow = 'hidden';
       var closeBtn = easterEl.querySelector('.easter-close');

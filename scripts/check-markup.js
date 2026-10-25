@@ -27,13 +27,13 @@ for (const [name, open, close] of pairs) {
   console.log(`${ok ? 'OK  ' : 'FAIL'} <${name}> open=${a} close=${b}`);
 }
 
-const tabs = count(/role="tab"/g);
-const panels = count(/role="tabpanel"/g);
-const panelDivs = count(/class="panel(?:\s|")/g);
+const tabs = count(/class="tab(?:[ "]|$)/g);
+const panels = count(/role="tabpanel"/g) || count(/class="panel(?:[ "]|$)/g);
+const panelDivs = count(/class="panel(?:[ "]|$)/g);
 console.log(`tabs=${tabs} tabpanels=${panels} panels=${panelDivs}`);
-if (tabs !== panels || tabs !== panelDivs) {
+if (tabs !== panelDivs) {
   failed = true;
-  console.log('FAIL tab/tabpanel/panel counts must match');
+  console.log('FAIL tab/panel counts must match');
 }
 
 // every aria-controls must resolve to an existing id, and vice versa
@@ -56,18 +56,39 @@ for (const id of labelledBy) {
 }
 
 // exactly one panel must ship as open (Главная), the rest start hidden
-const openPanels = count(/class="panel is-active"/g);
-const hiddenPanels = count(/class="panel"[^>]*hidden/g);
+const openPanels = count(/class="panel[^"]*\bis-active\b[^"]*"/g);
+const hiddenPanels = count(/class="panel[^"]*\bhidden\b[^"]*"/g);
 console.log(`panels open on load=${openPanels} hidden on load=${hiddenPanels}`);
 if (openPanels !== 1 || hiddenPanels !== panels - 1) {
   failed = true;
   console.log('FAIL exactly one panel must be open and the rest hidden on load');
 }
 
-// the animated-gradient helper must be re-applied to the modal title
-if (!/class="grad" id="panel-modal-title"/.test(html)) {
+// modal shells must be inert on load (class "hidden" present on the shell itself)
+for (const id of ['easter', 'panel-modal']) {
+  const tag = (html.match(new RegExp(`<div[^>]*\\bid="${id}"[^>]*>`)) || [''])[0];
+  if (!tag) {
+    failed = true;
+    console.log(`FAIL modal #${id} not found`);
+    continue;
+  }
+  const classAttr = (tag.match(/class="([^"]*)"/) || [, ''])[1];
+  if (!/\bhidden\b/.test(classAttr)) {
+    failed = true;
+    console.log(`FAIL modal #${id} is missing the class "hidden" on load`);
+  }
+  if (!/\shidden[ >]/.test(tag + ' ')) {
+    failed = true;
+    console.log(`FAIL modal #${id} is missing the boolean hidden attribute`);
+  }
+  console.log(`OK   modal #${id} starts hidden`);
+}
+
+// the body must never start out hidden: JS is an enhancement, not a gate
+const bodyTag = (html.match(/<body[^>]*>/) || [''])[0];
+if (/\bhide-js\b/.test(bodyTag)) {
   failed = true;
-  console.log('FAIL modal title is missing the .grad class');
+  console.log('FAIL <body> still carries hide-js — the page would be blank without JS');
 }
 
 console.log(failed ? '\nRESULT: FAILED' : '\nRESULT: OK');

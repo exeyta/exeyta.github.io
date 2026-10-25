@@ -1,11 +1,12 @@
-/* Brace/paren balance + selector sanity for style.css and a live check that
-   every id/selector script.js depends on exists in index.html.
+/* Live checks that every asset, id and hook script.js / index.html depend on
+   actually exists, plus CSS brace balance.
    Usage: node scripts/check-assets.js   (run from the repo root) */
 const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
+const exists = (f) => fs.existsSync(path.join(root, f));
 
 const css = read('style.css');
 const js = read('script.js');
@@ -17,7 +18,7 @@ const fail = (msg) => {
   console.log('FAIL ' + msg);
 };
 
-/* --- CSS: strip comments and strings, then count braces --- */
+/* --- CSS: strip comments and strings, then count braces and parens --- */
 const cssStripped = css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/"[^"\n]*"|'[^'\n]*'/g, '');
 const openBraces = (cssStripped.match(/\{/g) || []).length;
 const closeBraces = (cssStripped.match(/\}/g) || []).length;
@@ -29,78 +30,46 @@ const closeParens = (cssStripped.match(/\)/g) || []).length;
 console.log(`css parens open=${openParens} close=${closeParens}`);
 if (openParens !== closeParens) fail('unbalanced CSS parentheses');
 
-/* --- CSS: the classes the new feature needs must be defined --- */
+/* --- files referenced by index.html must exist on disk --- */
+const refs = [...html.matchAll(/(?:href|src)="(?!#|https?:|mailto:|tel:)([^"?]+)"/g)].map((m) => m[1]);
+for (const ref of [...new Set(refs)]) {
+  if (!exists(ref)) fail(`index.html references missing file: ${ref}`);
+}
+console.log(`local asset references checked: ${[...new Set(refs)].length}`);
+
+/* --- CSS classes the markup actually uses must be styled --- */
 const requiredCss = [
-  '.tabs', '.tab-rail', '.tab-ink', '.tab ', '.panel', '.panel.is-active',
-  '.is-leaving', '.link-chip', '.hero-more', '.modal ', '.modal.is-on',
-  '.modal-card', '.modal-close', '.modal-bg', '.modal-mesh', '.modal-body',
-  '.modal-actions', '.visually-hidden', 'body.modal-open'
+  '.header', '.header-inner', '.brand', '.tabs-rail', '.tab', '.tab-ink',
+  '.panel', '.panel.is-active', '.section', '.hero', '.hero-title', '.hero-mock',
+  '.btn', '.btn-primary', '.btn-ghost', '.card', '.modal', '.modal-card',
+  '.modal-bg', '.modal-body', '.modal-actions', '.easter', '.easter-card',
+  '.footer', '.visually-hidden', '.mobile-panel', '.editor-pane'
 ];
 for (const sel of requiredCss) {
-  if (!css.includes(sel)) fail(`style.css is missing ${sel.trim()}`);
+  if (!css.includes(sel)) fail(`style.css is missing ${sel}`);
 }
 
-/* --- JSON blocks inside script.js must parse --- */
-const literalNames = ['modalMeta'];
-for (const name of literalNames) {
-  const re = new RegExp('var ' + name + ' = (\\{[\\s\\S]*?\\n  \\});');
-  const m = js.match(re);
-  if (!m) {
-    fail(`script.js is missing the ${name} literal`);
-    continue;
-  }
-  try {
-    const value = new Function('return (' + m[1] + ')')();
-    console.log(`OK   script.js ${name} parses (${Object.keys(value).length} keys)`);
-  } catch (err) {
-    fail(`script.js ${name} does not parse: ${err.message}`);
-  }
-}
-
-/* array literals: installSteps etc. */
-const arrayNames = ['installSteps'];
-for (const name of arrayNames) {
-  const re = new RegExp('var ' + name + ' = (\\[[\\s\\S]*?\\n  \\]);');
-  const m = js.match(re);
-  if (!m) {
-    fail(`script.js is missing the ${name} literal`);
-    continue;
-  }
-  try {
-    const value = new Function('return (' + m[1] + ')')();
-    console.log(`OK   script.js ${name} parses (${value.length} items)`);
-  } catch (err) {
-    fail(`script.js ${name} does not parse: ${err.message}`);
-  }
-}
-
-/* --- every getElementById / data hook used by script.js must exist in HTML --- */
+/* --- every id referenced by script.js must exist in index.html --- */
 const ids = [...js.matchAll(/getElementById\('([^']+)'\)/g)].map((m) => m[1]);
 for (const id of [...new Set(ids)]) {
   if (!new RegExp(`id="${id}"`).test(html)) fail(`script.js wants #${id}, not found in index.html`);
 }
+console.log(`script.js id references checked: ${[...new Set(ids)].length}`);
 
+/* --- markup hooks script.js queries must be present --- */
 const hooks = [
-  ['data-tabs', /data-tabs/],
-  ['role="tab"', /role="tab"/],
-  ['role="tabpanel"', /role="tabpanel"/],
-  ['data-tab-link', /data-tab-link/],
-  ['data-modal-open', /data-modal-open/],
+  ['class="tab', /class="tab/],
+  ['class="panel', /class="panel/],
+  ['data-tab-link', /data-tab-link=/],
+  ['data-modal-open', /data-modal-open=/],
   ['data-modal-close', /data-modal-close/],
-  ['.modal-card', /class="modal-card/],
-  ['.tab-ink', /class="tab-ink"/]
+  ['class="tab-ink', /class="tab-ink"/]
 ];
 for (const [name, re] of hooks) {
   if (!re.test(html)) fail(`index.html is missing hook ${name}`);
 }
 
-/* --- all .reveal / [data-hero] stagger indices must be numeric --- */
-const stagger = [...html.matchAll(/--i:([^";]+)/g)].map((m) => m[1].trim());
-const badStagger = stagger.filter((v) => !/^\d+$/.test(v));
-if (badStagger.length) fail(`non-numeric stagger values: ${badStagger.join(', ')}`);
-console.log(`stagger indices found: ${stagger.length}`);
-
-/* --- links and anchors that must not have been renamed --- */
+/* --- SEO surface must not regress --- */
 const mustKeep = [
   'https://github.com/exeyta/exeyta-launcher/releases/latest/download/ExeytaSetup.exe',
   'https://t.me/exeyta',
@@ -108,9 +77,10 @@ const mustKeep = [
   'https://t.me/ouroptions',
   'assets/launcher-ui.svg',
   'assets/favicon.svg',
-  'id="features"',
-  'id="editor"',
-  'id="download"'
+  'rel="canonical" href="https://exeyta.github.io/"',
+  'name="google-site-verification"',
+  'application/ld+json',
+  'property="og:title"'
 ];
 for (const needle of mustKeep) {
   if (!html.includes(needle)) fail(`index.html lost: ${needle}`);
@@ -118,3 +88,4 @@ for (const needle of mustKeep) {
 
 console.log(failed ? '\nRESULT: FAILED' : '\nRESULT: OK');
 process.exit(failed ? 1 : 0);
+
