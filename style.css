@@ -245,6 +245,7 @@ section { padding: 110px 24px 80px; max-width: 1200px; margin: 0 auto; }
   position: relative;
   width: 100%;
   max-width: 640px;
+}
 .hero-stats {
   display: flex;
   justify-content: center;
