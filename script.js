@@ -48,7 +48,7 @@
   if (year) year.textContent = String(new Date().getFullYear());
 
   /* --- scroll reveal (one shot, staggered) ------------------------------ */
-  var reveals = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  var reveals = [];
 
   function settle(el) {
     var i = parseInt(el.style.getPropertyValue('--i'), 10) || 0;
@@ -57,37 +57,56 @@
     }, 780 + i * 80);
   }
 
-  if (!('IntersectionObserver' in window) || reduced) {
-    reveals.forEach(function (el) {
-      el.classList.add('is-in', 'is-settled');
-    });
-  } else {
-    var ioFired = false;
-    var io = new IntersectionObserver(
-      function (entries) {
-        ioFired = true;
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-          var el = entry.target;
-          io.unobserve(el);
-          el.classList.add('is-in');
-          settle(el);
-        });
-      },
-      { threshold: 0.12, rootMargin: '0px 0px -6% 0px' }
-    );
-    reveals.forEach(function (el) {
-      io.observe(el);
-    });
-    /* safety net: if IntersectionObserver never delivers anything (broken env),
-       content must never stay hidden */
-    window.setTimeout(function () {
-      if (ioFired) return;
+  function markVisible(el) {
+    el.classList.add('is-in');
+    settle(el);
+  }
+
+  var io = null;
+
+  function revealWatch() {
+    /* re-scan on every panel switch: hidden panels keep their nodes, but only
+       the newly shown one has to be observed/played */
+    reveals = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+
+    if (!('IntersectionObserver' in window) || reduced) {
       reveals.forEach(function (el) {
         el.classList.add('is-in', 'is-settled');
       });
-    }, 3000);
+      return;
+    }
+
+    if (!io) {
+      var ioFired = false;
+      io = new IntersectionObserver(
+        function (entries) {
+          ioFired = true;
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            var el = entry.target;
+            io.unobserve(el);
+            markVisible(el);
+          });
+        },
+        { threshold: 0.12, rootMargin: '0px 0px -6% 0px' }
+      );
+      /* safety net: if IntersectionObserver never delivers anything (broken
+         environment), content must never stay hidden */
+      window.setTimeout(function () {
+        if (ioFired) return;
+        reveals.forEach(function (el) {
+          el.classList.add('is-in', 'is-settled');
+        });
+      }, 3000);
+    }
+
+    reveals.forEach(function (el) {
+      if (el.classList.contains('is-in')) return;
+      io.observe(el);
+    });
   }
+
+  revealWatch();
 
   /* --- header state, scroll progress, scroll-linked parallax ------------- */
   var header = document.querySelector('.header');
@@ -398,52 +417,396 @@
   });
 
   /* ======================================================================
-     Easter egg: 5 clicks on the site icon → full-screen «67»
+     Section tabs — one panel at a time, starts on «Главная»
      ====================================================================== */
-  (function easterEgg() {
-    var brandMark = document.querySelector('.brand-mark');
-    var easter = document.getElementById('easter');
-    if (!brandMark || !easter) return;
+  var tabsRoot = document.querySelector('[data-tabs]');
+  var tabButtons = [];
+  var panels = [];
+  var tabInk = null;
+  var activeIndex = 0;
+  var tabSettleTimer = 0;
 
-    var closeBtn = easter.querySelector('.easter-close');
-    var noteLink = easter.querySelector('.easter-note a');
-    var hits = 0;
-    var timer = 0;
+  if (tabsRoot) {
+    tabButtons = Array.prototype.slice.call(tabsRoot.querySelectorAll('[role="tab"]'));
+    tabInk = tabsRoot.querySelector('.tab-ink');
+    panels = tabButtons
+      .map(function (btn) {
+        return document.getElementById(btn.getAttribute('aria-controls'));
+      })
+      .filter(Boolean);
+  }
 
-    function openEgg() {
-      hits = 0;
-      window.clearTimeout(timer);
-      easter.classList.add('is-on');
-      body.classList.add('egg-open');
-      if (closeBtn) {
-        try {
-          closeBtn.focus({ preventScroll: true });
-        } catch (err) {
-          closeBtn.focus();
-        }
+  var TAB_COUNT = tabButtons.length;
+
+  /* gradient indicator follows the active tab; measured after layout so it
+     never lands on a stale position when the rail scrolls horizontally */
+  function moveInk() {
+    if (!tabsRoot || !tabInk || !tabButtons.length) return;
+    var rail = tabsRoot.querySelector('.tab-rail');
+    var btn = tabButtons[activeIndex];
+    if (!rail || !btn) return;
+    var railRect = rail.getBoundingClientRect();
+    var btnRect = btn.getBoundingClientRect();
+    var pad = (railRect.height - btnRect.height) / 2;
+    tabsRoot.style.setProperty('--tab-x', (btnRect.left - railRect.left - pad).toFixed(2) + 'px');
+    tabsRoot.style.setProperty('--tab-w', btnRect.width.toFixed(2) + 'px');
+    rail.classList.add('is-measured');
+  }
+
+  /* on narrow screens the rail is a swipeable strip — keep the tab in view */
+  function onInkMoved() {
+    var rail = tabsRoot && tabsRoot.querySelector('.tab-rail');
+    if (!rail || rail.scrollWidth <= rail.clientWidth + 2) return;
+    var target = tabButtons[activeIndex];
+    if (!target || !rail.scrollTo) return;
+    rail.scrollTo({
+      left: Math.max(0, target.offsetLeft - rail.clientWidth / 2 + target.offsetWidth / 2),
+      behavior: reduced ? 'auto' : 'smooth'
+    });
+  }
+
+  function showPanel(index, opts) {
+    if (!panels.length) return;
+    var next = clamp(index, 0, panels.length - 1);
+    var options = opts || {};
+    var changed = next !== activeIndex || options.force;
+
+    activeIndex = next;
+
+    tabButtons.forEach(function (btn, i) {
+      var active = i === next;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      btn.tabIndex = active ? 0 : -1;
+    });
+
+    panels.forEach(function (panel, i) {
+      if (i === next) {
+        panel.classList.remove('is-leaving');
+        panel.hidden = false;
+        /* restart the entrance animation on every switch */
+        panel.classList.remove('is-active');
+        void panel.offsetWidth;
+        panel.classList.add('is-active');
+      } else {
+        panel.hidden = true;
+        panel.classList.remove('is-active', 'is-leaving');
       }
+    });
+
+    moveInk();
+    onInkMoved();
+
+    /* reveals inside a freshly shown panel start hidden until observed */
+    if (changed) revealWatch();
+
+    if (options.scroll && tabsRoot) {
+      var top = tabsRoot.getBoundingClientRect().top + (window.scrollY || 0);
+      window.scrollTo({ top: Math.max(0, top - 12), behavior: reduced ? 'auto' : 'smooth' });
+    }
+  }
+
+  /* the outgoing panel leaves first (short GPU-only exit), then the new one enters */
+  function switchPanel(index, opts) {
+    if (!panels.length) return;
+    var next = clamp(index, 0, panels.length - 1);
+    var current = panels[activeIndex];
+
+    if (next === activeIndex || !current || reduced) {
+      showPanel(next, opts);
+      return;
     }
 
-    function closeEgg() {
-      if (!easter.classList.contains('is-on')) return;
-      easter.classList.remove('is-on');
-      body.classList.remove('egg-open');
-      var home = brandMark.closest('a');
-      if (home) {
+    window.clearTimeout(tabSettleTimer);
+    current.classList.add('is-leaving');
+    tabSettleTimer = window.setTimeout(function () {
+      showPanel(next, opts);
+    }, 150);
+  }
+
+
+  function tabIndexOf(panel) {
+    var id = panel && panel.id;
+    for (var i = 0; i < panels.length; i++) {
+      if (panels[i].id === id) return i;
+    }
+    return -1;
+  }
+
+  function tabIndexOfHash(hash) {
+    if (!hash || hash.charAt(0) !== '#') return -1;
+    var key = hash.slice(1);
+    if (key === 'top' || key === 'main') return 0;
+    var el = document.getElementById(key);
+    if (!el) return -1;
+    var panel = el.closest ? el.closest('.panel') : null;
+    return panel ? tabIndexOf(panel) : -1;
+  }
+
+  if (panels.length) {
+    /* click + roving-keyboard control on the tablist */
+    tabButtons.forEach(function (btn, i) {
+      on(btn, 'click', function () {
+        switchPanel(i, { scroll: (window.scrollY || 0) > 40 });
+      });
+
+      on(btn, 'keydown', function (e) {
+        var key = e.key;
+        var delta = key === 'ArrowRight' ? 1 : key === 'ArrowLeft' ? -1 : 0;
+        var target = null;
+
+        if (delta) target = (i + delta + TAB_COUNT) % TAB_COUNT;
+        else if (key === 'Home') target = 0;
+        else if (key === 'End') target = TAB_COUNT - 1;
+        else return;
+
+        e.preventDefault();
+        tabButtons[target].focus();
+        switchPanel(target, { scroll: false });
+      });
+    });
+
+    /* header, hero and mobile-menu links activate the matching tab */
+    on(document, 'click', function (e) {
+      var link = e.target && e.target.closest && e.target.closest('[data-tab-link]');
+      if (!link) return;
+      var index = tabIndexOf(document.getElementById(link.getAttribute('data-tab-link')));
+      if (index < 0) return;
+      e.preventDefault();
+      switchPanel(index, { scroll: true, replaceHash: true });
+      /* the same link may live inside a dialog — close it so the tab is visible */
+      var hostModal = link.closest ? link.closest('.modal') : null;
+      if (hostModal) closeModalShell(hostModal, true);
+    });
+
+    /* deep links: #panel-editor works directly, and so does the old #editor */
+    on(window, 'hashchange', function () {
+      var index = tabIndexOfHash(window.location.hash);
+      if (index >= 0) switchPanel(index, { scroll: true });
+    });
+
+    var startIndex = tabIndexOfHash(window.location.hash);
+    showPanel(startIndex >= 0 ? startIndex : 0, { force: true });
+
+    /* the rail is a horizontally scrollable strip on narrow screens */
+    on(window, 'resize', function () {
+      moveInk();
+    }, { passive: true });
+
+    if ('ResizeObserver' in window) {
+      new ResizeObserver(moveInk).observe(tabButtons[0]);
+    }
+
+    /* webfonts land after first paint → re-measure once they are ready */
+    if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+      document.fonts.ready.then(moveInk);
+    }
+    window.setTimeout(moveInk, 240);
+  }
+
+
+  /* ======================================================================
+     Modals — one shell for section dialogs and the easter egg
+     ====================================================================== */
+  var openModal = null;
+  var lastFocus = null;
+  var FOCUSABLE =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  function focusables(scope) {
+    if (!scope) return [];
+    return Array.prototype.slice.call(scope.querySelectorAll(FOCUSABLE)).filter(function (el) {
+      return el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement;
+    });
+  }
+
+  function openModalById(el) {
+    if (!el || openModal === el) return;
+    if (openModal) closeModalShell(openModal, false);
+
+    lastFocus = document.activeElement;
+    el.hidden = false;
+    el.classList.add('is-on');
+    body.classList.add('modal-open');
+    openModal = el;
+
+    var first = el.querySelector('[data-modal-close]') || focusables(el)[0];
+    if (first && first.focus) {
+      try {
+        first.focus({ preventScroll: true });
+      } catch (err) {
+        first.focus();
+      }
+    }
+    touch();
+  }
+
+  function closeModalShell(el, restoreFocus) {
+    if (!el || !el.classList.contains('is-on')) return;
+    el.classList.remove('is-on');
+    body.classList.remove('modal-open');
+    if (el.id === 'easter') body.classList.remove('egg-open');
+    if (openModal === el) openModal = null;
+
+    /* keep the node out of the a11y tree once the exit finished */
+    window.setTimeout(function () {
+      if (!el.classList.contains('is-on')) el.hidden = true;
+    }, 420);
+
+    if (restoreFocus !== false) {
+      var back = lastFocus;
+      lastFocus = null;
+      if (back && back.focus) {
         try {
-          home.focus({ preventScroll: true });
+          back.focus({ preventScroll: true });
         } catch (err) {
           /* ignore */
         }
       }
     }
+  }
+
+  /* section modal content is derived from the panels so they stay the source */
+  var modalMeta = {
+    'panel-features': { eyebrow: 'Возможности', title: 'Всё для игры — в одном окне' },
+    'panel-editor': { eyebrow: 'Редактор скинов', title: 'Редактор скина без лишнего' },
+    'panel-download': { eyebrow: 'Установка', title: 'Как поставить лаунчер' }
+  };
+
+  var installSteps = [
+    'Скачай ExeytaSetup.exe — установщик берётся с последнего релиза GitHub.',
+    'Запусти установщик и дождись конца распаковки — шкала доходит ровно до 100%.',
+    'Открой Exeyta Launcher, укажи папку с игрой и объём оперативной памяти.',
+    'Выбери версию и нажми «Играть» — дальше лаунчер всё сделает сам.'
+  ];
+
+  var panelModal = document.getElementById('panel-modal');
+  var panelModalTitle = document.getElementById('panel-modal-title');
+  var panelModalBody = document.getElementById('panel-modal-body');
+
+  function buildPanelModal(id) {
+    if (!panelModal || !panelModalBody) return;
+    var meta = modalMeta[id] || { eyebrow: 'Раздел', title: 'Раздел' };
+    var eyebrow = panelModal.querySelector('.modal-eyebrow');
+
+    if (panelModalTitle) {
+      panelModalTitle.textContent = meta.title;
+      /* restart the animated gradient after the title changed */
+      panelModalTitle.classList.remove('grad');
+      window.requestAnimationFrame(function () {
+        panelModalTitle.classList.add('grad');
+      });
+    }
+    if (eyebrow) eyebrow.textContent = meta.eyebrow;
+
+    panelModalBody.textContent = '';
+
+    if (id === 'panel-download') {
+      var intro = document.createElement('p');
+      intro.textContent = 'Четыре шага — и лаунчер готов к запуску.';
+      panelModalBody.appendChild(intro);
+
+      var list = document.createElement('ul');
+      installSteps.forEach(function (text) {
+        var li = document.createElement('li');
+        li.textContent = text;
+        list.appendChild(li);
+      });
+      panelModalBody.appendChild(list);
+      return;
+    }
+
+    var source = document.getElementById(id);
+    var copy = source ? source.querySelector('.section-lead, .editor-copy > p') : null;
+    var lead = document.createElement('p');
+    lead.textContent = copy
+      ? copy.textContent.trim()
+      : 'Подробности — во вкладке «' + meta.eyebrow + '».';
+    panelModalBody.appendChild(lead);
+
+    var anchor = document.createElement('p');
+    var link = document.createElement('a');
+    link.href = '#' + id;
+    link.setAttribute('data-tab-link', id);
+    link.textContent = 'Открыть вкладку целиком';
+    anchor.appendChild(link);
+    panelModalBody.appendChild(anchor);
+  }
+
+  on(document, 'click', function (e) {
+    var opener = e.target && e.target.closest && e.target.closest('[data-modal-open]');
+    if (!opener) return;
+    e.preventDefault();
+    var id = opener.getAttribute('data-modal-open');
+    if (modalMeta[id] || id === 'panel-modal') {
+      buildPanelModal(id);
+      openModalById(panelModal);
+    } else {
+      openModalById(document.getElementById(id));
+    }
+  });
+
+  on(document, 'click', function (e) {
+    var closer = e.target && e.target.closest && e.target.closest('[data-modal-close]');
+    if (closer) {
+      var scope = closer.closest('.modal');
+      if (scope) {
+        e.preventDefault();
+        closeModalShell(scope, true);
+      }
+      return;
+    }
+
+    /* a click on the backdrop itself closes the dialog */
+    if (!openModal) return;
+    var card = openModal.querySelector('.modal-card');
+    if (card && card.contains(e.target)) return;
+    if (openModal.contains(e.target)) closeModalShell(openModal, true);
+  });
+
+  on(document, 'keydown', function (e) {
+    if (!openModal) return;
+
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      e.preventDefault();
+      closeModalShell(openModal, true);
+      return;
+    }
+
+    if (e.key !== 'Tab') return;
+
+    /* focus stays inside the dialog while it is open */
+    var items = focusables(openModal);
+    if (!items.length) return;
+    var first = items[0];
+    var last = items[items.length - 1];
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
+
+  (function easterEgg() {
+    var brandMark = document.querySelector('.brand-mark');
+    var easter = document.getElementById('easter');
+    if (!brandMark || !easter) return;
+
+    var noteLink = easter.querySelector('.easter-note a');
+    var hits = 0;
+    var timer = 0;
 
     brandMark.addEventListener('click', function (e) {
       hits += 1;
       window.clearTimeout(timer);
       if (hits >= 5) {
         e.preventDefault();
-        openEgg();
+        hits = 0;
+        body.classList.add('egg-open');
+        openModalById(easter);
         return;
       }
       timer = window.setTimeout(function () {
@@ -451,18 +814,8 @@
       }, 2600);
     });
 
-    if (closeBtn) closeBtn.addEventListener('click', function (e) {
+    if (noteLink) noteLink.addEventListener('click', function (e) {
       e.stopPropagation();
-      closeEgg();
-    });
-
-    easter.addEventListener('click', function (e) {
-      if (noteLink && e.target && e.target.closest && e.target.closest('a')) return;
-      closeEgg();
-    });
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' || e.key === 'Esc') closeEgg();
     });
   })();
 

@@ -20,6 +20,12 @@
     <style>
       .reveal, [data-hero], .hero-visual, .shot-enter { opacity: 1 !important; transform: none !important; filter: none !important; translate: none !important; }
       .burger { display: none !important; }
+      /* без JS вкладки и модалки не работают — показываем всё содержимое сразу */
+      .tab-ink, .tab-hint { display: none !important; }
+      .panel[hidden] { display: block !important; }
+      .panel + .panel { margin-top: 8px; }
+      .tab-rail { opacity: 0.55; }
+      .hero-more { display: none !important; }
     </style>
   </noscript>
 </head>
@@ -52,12 +58,13 @@
       </a>
 
       <nav class="nav" aria-label="Основная навигация">
-        <a href="#features" data-hero style="--i:1">Возможности</a>
-        <a href="#editor" data-hero style="--i:2">Скины</a>
-        <a href="#download" data-hero style="--i:3">Скачать</a>
+        <a href="#panel-home" data-tab-link="panel-home" data-hero style="--i:1">Главная</a>
+        <a href="#panel-features" data-tab-link="panel-features" data-hero style="--i:2">Возможности</a>
+        <a href="#panel-editor" data-tab-link="panel-editor" data-hero style="--i:3">Скины</a>
+        <a href="#panel-download" data-tab-link="panel-download" data-hero style="--i:4">Скачать</a>
       </nav>
 
-      <div class="header-actions" data-hero style="--i:4">
+      <div class="header-actions" data-hero style="--i:5">
         <a class="btn btn-telegram btn-sm magnetic" href="https://t.me/exeyta" target="_blank" rel="noopener noreferrer">Telegram</a>
         <button class="burger" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Открыть меню">
           <span></span><span></span><span></span>
@@ -67,16 +74,69 @@
 
     <div class="mobile-menu" id="mobile-menu">
       <nav aria-label="Мобильная навигация">
-        <a href="#features">Возможности</a>
-        <a href="#editor">Скины</a>
-        <a href="#download">Скачать</a>
+        <a href="#panel-home" data-tab-link="panel-home">Главная</a>
+        <a href="#panel-features" data-tab-link="panel-features">Возможности</a>
+        <a href="#panel-editor" data-tab-link="panel-editor">Скины</a>
+        <a href="#panel-download" data-tab-link="panel-download">Скачать</a>
         <a class="btn btn-telegram" href="https://t.me/exeyta" target="_blank" rel="noopener noreferrer">Telegram</a>
       </nav>
     </div>
   </header>
 
   <main id="main">
-    <!-- ================= HERO ================= -->
+    <!-- ================= SECTION TABS ================= -->
+    <div class="tabs reveal" data-tabs style="--i:0">
+      <div class="tab-rail" role="tablist" aria-label="Разделы лаунчера">
+        <span class="tab-ink" aria-hidden="true"></span>
+
+        <button class="tab is-active" type="button" role="tab" id="tab-home" aria-selected="true" aria-controls="panel-home" tabindex="0" style="--i:0">
+          <span class="tab-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M4 10.6 12 4l8 6.6V20a1 1 0 0 1-1 1h-4.6v-6H9.6v6H5a1 1 0 0 1-1-1Z" />
+            </svg>
+          </span>
+          <span class="tab-label">Главная</span>
+        </button>
+
+        <button class="tab" type="button" role="tab" id="tab-features" aria-selected="false" aria-controls="panel-features" tabindex="-1" style="--i:1">
+          <span class="tab-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="3.5" y="3.5" width="7" height="7" rx="2" />
+              <rect x="13.5" y="3.5" width="7" height="7" rx="2" />
+              <rect x="3.5" y="13.5" width="7" height="7" rx="2" />
+              <rect x="13.5" y="13.5" width="7" height="7" rx="2" />
+            </svg>
+          </span>
+          <span class="tab-label">Возможности</span>
+        </button>
+
+        <button class="tab" type="button" role="tab" id="tab-editor" aria-selected="false" aria-controls="panel-editor" tabindex="-1" style="--i:2">
+          <span class="tab-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z" />
+              <path d="M14.5 6.5l3 3" />
+            </svg>
+          </span>
+          <span class="tab-label">Редактор скинов</span>
+        </button>
+
+        <button class="tab" type="button" role="tab" id="tab-download" aria-selected="false" aria-controls="panel-download" tabindex="-1" style="--i:3">
+          <span class="tab-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M12 3.5v11" />
+              <path d="M7.6 10.4 12 14.8l4.4-4.4" />
+              <path d="M4.5 19.5h15" />
+            </svg>
+          </span>
+          <span class="tab-label">Скачать</span>
+        </button>
+      </div>
+
+      <span class="tab-hint">Компактный режим: разделы открываются по одному</span>
+    </div>
+
+    <!-- ================= PANEL: ГЛАВНАЯ ================= -->
+    <div class="panel is-active" id="panel-home" role="tabpanel" aria-labelledby="tab-home" tabindex="0" data-panel="Главная">
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-copy">
         <p class="eyebrow" data-hero style="--i:0">Minecraft · Лаунчер · <strong>Альфа</strong></p>
@@ -94,10 +154,22 @@
           <span class="cta-halo magnetic">
             <a class="btn btn-primary btn-lg" href="https://github.com/exeyta/exeyta-launcher/releases/latest/download/ExeytaSetup.exe">Скачать лаунчер</a>
           </span>
-          <a class="btn btn-ghost magnetic" href="#editor">Смотреть редактор</a>
+          <a class="btn btn-ghost magnetic" href="#panel-editor" data-tab-link="panel-editor">Смотреть редактор</a>
         </div>
 
-        <ul class="hero-stats" data-hero style="--i:7">
+        <p class="hero-more" data-hero style="--i:7">
+          <button class="link-chip" type="button" data-modal-open="panel-features">
+            Возможности <span aria-hidden="true">→</span>
+          </button>
+          <button class="link-chip" type="button" data-modal-open="panel-editor">
+            Редактор скинов <span aria-hidden="true">→</span>
+          </button>
+          <button class="link-chip" type="button" data-modal-open="panel-download">
+            Как установить <span aria-hidden="true">→</span>
+          </button>
+        </p>
+
+        <ul class="hero-stats" data-hero style="--i:8">
           <li><strong>Слои</strong><span>база + накладка</span></li>
           <li><strong>3D</strong><span>превью персонажа</span></li>
           <li><strong>Запуск</strong><span>одной кнопкой</span></li>
@@ -126,8 +198,11 @@
     </section>
 
     <div class="divider" aria-hidden="true"></div>
+    </div>
+    <!-- ================= /PANEL: ГЛАВНАЯ ================= -->
 
-    <!-- ================= FEATURES ================= -->
+    <!-- ================= PANEL: ВОЗМОЖНОСТИ ================= -->
+    <div class="panel" id="panel-features" role="tabpanel" aria-labelledby="tab-features" tabindex="0" data-panel="Возможности" hidden>
     <section class="section features" id="features" aria-labelledby="features-title">
       <span class="sec-glow" aria-hidden="true"></span>
 
@@ -184,8 +259,11 @@
     </section>
 
     <div class="divider" aria-hidden="true"></div>
+    </div>
+    <!-- ================= /PANEL: ВОЗМОЖНОСТИ ================= -->
 
-    <!-- ================= EDITOR ================= -->
+    <!-- ================= PANEL: РЕДАКТОР СКИНОВ ================= -->
+    <div class="panel" id="panel-editor" role="tabpanel" aria-labelledby="tab-editor" tabindex="0" data-panel="Редактор скинов" hidden>
     <section class="section editor-spotlight" id="editor" aria-labelledby="editor-title">
       <span class="sec-glow sec-glow-alt" aria-hidden="true"></span>
 
@@ -320,8 +398,11 @@
     </section>
 
     <div class="divider" aria-hidden="true"></div>
+    </div>
+    <!-- ================= /PANEL: РЕДАКТОР СКИНОВ ================= -->
 
-    <!-- ================= DOWNLOAD ================= -->
+    <!-- ================= PANEL: СКАЧАТЬ ================= -->
+    <div class="panel" id="panel-download" role="tabpanel" aria-labelledby="tab-download" tabindex="0" data-panel="Скачать" hidden>
     <section class="section download" id="download" aria-labelledby="download-title">
       <div class="download-card reveal">
         <span class="dl-sheen" aria-hidden="true"></span>
@@ -335,6 +416,8 @@
         </div>
       </div>
     </section>
+    </div>
+    <!-- ================= /PANEL: СКАЧАТЬ ================= -->
   </main>
 
   <footer class="footer">
@@ -347,23 +430,48 @@
     </div>
   </footer>
 
-  <!-- Пасхалка: 5 кликов по иконке сайта -->
-  <div class="easter" id="easter" role="dialog" aria-modal="true" aria-label="Пасхалка: 67">
+  <!-- ================= MODAL: ПАСХАЛКА 67 ================= -->
+  <div class="modal easter" id="easter" role="dialog" aria-modal="true" aria-labelledby="easter-title" hidden>
     <span class="easter-bg" aria-hidden="true">
       <span class="easter-mesh easter-mesh-a"></span>
       <span class="easter-mesh easter-mesh-b"></span>
       <span class="easter-rays"></span>
     </span>
 
-    <button class="easter-close" type="button" aria-label="Закрыть">
+    <button class="modal-close easter-close" type="button" aria-label="Закрыть" data-modal-close>
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false">
         <path d="M6 6l12 12M18 6L6 18" />
       </svg>
     </button>
 
-    <div class="easter-content">
+    <div class="modal-card easter-content">
+      <h2 class="visually-hidden" id="easter-title">Пасхалка 67</h2>
       <div class="easter-num"><span>67</span></div>
       <p class="easter-note">Скинь этот скрин в чат <a href="https://t.me/ouroptions" target="_blank" rel="noopener noreferrer">https://t.me/ouroptions</a></p>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: РАЗДЕЛ ================= -->
+  <div class="modal modal-panel" id="panel-modal" role="dialog" aria-modal="true" aria-labelledby="panel-modal-title" hidden>
+    <span class="modal-bg" aria-hidden="true">
+      <span class="modal-mesh modal-mesh-a"></span>
+      <span class="modal-mesh modal-mesh-b"></span>
+    </span>
+
+    <button class="modal-close" type="button" aria-label="Закрыть окно раздела" data-modal-close>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false">
+        <path d="M6 6l12 12M18 6L6 18" />
+      </svg>
+    </button>
+
+    <div class="modal-card">
+      <p class="modal-eyebrow" aria-hidden="true">Раздел</p>
+      <h2 class="grad" id="panel-modal-title">Раздел</h2>
+      <div class="modal-body" id="panel-modal-body"></div>
+      <div class="modal-actions">
+        <a class="btn btn-primary magnetic" id="panel-modal-dl" href="https://github.com/exeyta/exeyta-launcher/releases/latest/download/ExeytaSetup.exe">Скачать лаунчер</a>
+        <button class="btn btn-ghost magnetic" type="button" data-modal-close>Закрыть</button>
+      </div>
     </div>
   </div>
 
