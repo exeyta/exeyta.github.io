@@ -1,24 +1,17 @@
-/* ==========================================================================
-   Exeyta Launcher — site interaction layer
-   ========================================================================== */
-
 (function () {
   'use strict';
 
   var tabs = document.querySelectorAll('.tab');
   var panels = document.querySelectorAll('.panel');
-  var modalPanels = document.querySelectorAll('[data-modal-open]');
-
   var modal = document.getElementById('panel-modal');
   var modalTitle = document.getElementById('panel-modal-title');
   var modalBody = document.getElementById('panel-modal-body');
   var modalDl = document.getElementById('panel-modal-dl');
   var modalCloses = document.querySelectorAll('[data-modal-close]');
-  var easterBtn = document.getElementById('easter');
-
+  var easterEl = document.getElementById('easter');
   var yearEl = document.getElementById('year');
   var mobileMenuBtn = document.getElementById('mobile-menu');
-  var mobilePanel = document.getElementById('menu-list');
+  var mobilePanel = document.getElementById('mobile-panel');
   var mobileItems = document.querySelectorAll('.mobile-item[data-tab-link]');
 
   function showPanel(el) {
@@ -49,8 +42,8 @@
   }
 
   function updateInk(tab) {
-    var rail = document.querySelector('.tabs-rail');
     var ink = document.querySelector('.tab-ink');
+    var rail = document.querySelector('.tabs-rail');
     if (!ink || !rail || !tab) return;
     var rect = tab.getBoundingClientRect();
     var railRect = rail.getBoundingClientRect();
@@ -59,7 +52,8 @@
   }
 
   function moveFocus(dir) {
-    var index = Array.prototype.indexOf.call(tabs, document.querySelector('.tab.is-active'));
+    var active = document.querySelector('.tab.is-active');
+    var index = Array.prototype.indexOf.call(tabs, active);
     var next = (index + dir + tabs.length) % tabs.length;
     tabs[next].focus();
   }
@@ -78,30 +72,35 @@
     });
   });
 
-  mobileMenuBtn.addEventListener('click', function () {
-    var expanded = mobileMenuBtn.getAttribute('aria-expanded') === 'true';
-    mobileMenuBtn.setAttribute('aria-expanded', String(!expanded));
-    mobilePanel.hidden = expanded;
-  });
+  if (mobileMenuBtn && mobilePanel) {
+    mobileMenuBtn.addEventListener('click', function () {
+      var expanded = mobileMenuBtn.getAttribute('aria-expanded') === 'true';
+      mobileMenuBtn.setAttribute('aria-expanded', String(!expanded));
+      mobilePanel.hidden = expanded;
+    });
+  }
+
   mobileItems.forEach(function (item) {
     item.addEventListener('click', function () {
-      var panelId = this.getAttribute('data-tab-link');
-      var panel = document.getElementById(panelId);
-      var tab = document.querySelector('.tab[aria-controls="' + panelId + '"]');
-      activateTab(tab);
-      showPanel(panel);
-      mobilePanel.hidden = true;
-      mobileMenuBtn.setAttribute('aria-expanded', 'false');
+      var panel = document.getElementById(this.getAttribute('data-tab-link'));
+      var tab = document.querySelector('.tab[aria-controls="' + this.getAttribute('data-tab-link') + '"]');
+      if (mobilePanel) mobilePanel.hidden = true;
+      if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'false');
+      if (panel && tab) {
+        activateTab(tab);
+        showPanel(panel);
+      }
     });
   });
 
   function closeModals() {
-    if (modal) { modal.hidden = true; modal.removeAttribute('aria-modal'); }
-    if (easterBtn) { easterBtn.hidden = true; easterBtn.removeAttribute('aria-modal'); }
+    if (modal) { modal.hidden = true; modal.setAttribute('aria-modal', 'false'); }
+    if (easterEl) { easterEl.hidden = true; easterEl.setAttribute('aria-modal', 'false'); }
     document.body.style.overflow = '';
   }
 
-  modalPanels.forEach(function (btn) {
+  var modalTriggers = document.querySelectorAll('[data-modal-open]');
+  modalTriggers.forEach(function (btn) {
     btn.addEventListener('click', function () {
       var target = this.getAttribute('data-modal-open');
       var panel = document.getElementById(target);
@@ -114,17 +113,19 @@
       modal.hidden = false;
       modal.setAttribute('aria-modal', 'true');
       document.body.style.overflow = 'hidden';
-      modal.querySelector('[data-modal-close]').focus();
+      var closeBtn = modal.querySelector('[data-modal-close]');
+      if (closeBtn) closeBtn.focus();
     });
   });
-
   modalCloses.forEach(function (btn) {
     btn.addEventListener('click', closeModals);
   });
 
-  modal.addEventListener('click', function (e) {
-    if (e.target === modal || e.target === document.querySelector('.modal-bg')) closeModals();
-  });
+  if (modal) {
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal || e.target === modal.querySelector('.modal-bg')) closeModals();
+    });
+  }
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') closeModals();
@@ -136,11 +137,12 @@
   var timer = 0;
 
   function openEaster() {
-    if (easterBtn) {
-      easterBtn.hidden = false;
-      easterBtn.setAttribute('aria-modal', 'true');
+    if (easterEl) {
+      easterEl.hidden = false;
+      easterEl.setAttribute('aria-modal', 'true');
       document.body.style.overflow = 'hidden';
-      easterBtn.querySelector('.easter-close').focus();
+      var closeBtn = easterEl.querySelector('.easter-close');
+      if (closeBtn) closeBtn.focus();
     }
   }
 
@@ -195,6 +197,4 @@
   document.documentElement.classList.remove('no-js');
   document.documentElement.classList.add('js-ready');
   document.body.classList.remove('hide-js');
-
 })();
-
