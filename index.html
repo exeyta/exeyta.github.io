@@ -1,101 +1,196 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="no-js">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Exeyta Launcher — красивый лаунчер Minecraft с редактором скинов и быстрым запуском." />
-  <meta name="theme-color" content="#140910" />
+  <meta name="theme-color" content="#0A0710" />
+  <meta name="color-scheme" content="dark" />
   <title>Exeyta Launcher — лаунчер Minecraft</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    document.documentElement.className = document.documentElement.className.replace('no-js', 'js');
+  </script>
+  <noscript>
+    <style>
+      .reveal, [data-hero], .hero-visual, .shot-enter { opacity: 1 !important; transform: none !important; filter: none !important; translate: none !important; }
+      .burger { display: none !important; }
+    </style>
+  </noscript>
 </head>
 <body>
-  <div class="bg">
-    <div class="orb orb-a"></div>
-    <div class="orb orb-b"></div>
-    <div class="grid"></div>
-    <canvas id="particles" aria-hidden="true"></canvas>
-  </div>
+  <a class="skip-link" href="#main">Перейти к содержимому</a>
 
-  <header class="header">
-    <a class="brand" href="#">
-      <span class="brand-mark">E</span>
-      <span class="brand-text">
-        <strong>EXEYTA</strong>
-        <small>LAUNCHER</small>
-      </span>
-    </a>
-    <nav class="nav">
-      <a href="#features">Возможности</a>
-      <a href="#editor">Скины</a>
-      <a href="#download">Скачать</a>
-    </nav>
-    <a class="btn btn-telegram" href="https://t.me/exeyta" target="_blank" rel="noopener noreferrer">Telegram</a>
+  <!-- Фон: mesh-градиенты, сетка, частицы -->
+  <div class="bg" aria-hidden="true">
+    <span class="mesh mesh-1"></span>
+    <span class="mesh mesh-2"></span>
+    <span class="mesh mesh-3"></span>
+    <span class="mesh mesh-4"></span>
+    <span class="mesh-conic"></span>
+    <span class="bg-grid"></span>
+    <canvas id="particles"></canvas>
+    <span class="bg-vignette"></span>
+  </div>
+  <span class="grain" aria-hidden="true"></span>
+  <span class="cursor-glow" aria-hidden="true"></span>
+  <div class="scroll-progress" aria-hidden="true"><i></i></div>
+
+  <header class="header" id="top">
+    <div class="header-inner">
+      <a class="brand" href="#" data-hero style="--i:0">
+        <span class="brand-mark" aria-hidden="true">E</span>
+        <span class="brand-text">
+          <strong>EXEYTA</strong>
+          <small>LAUNCHER</small>
+        </span>
+      </a>
+
+      <nav class="nav" aria-label="Основная навигация">
+        <a href="#features" data-hero style="--i:1">Возможности</a>
+        <a href="#editor" data-hero style="--i:2">Скины</a>
+        <a href="#download" data-hero style="--i:3">Скачать</a>
+      </nav>
+
+      <div class="header-actions" data-hero style="--i:4">
+        <a class="btn btn-telegram btn-sm magnetic" href="https://t.me/exeyta" target="_blank" rel="noopener noreferrer">Telegram</a>
+        <button class="burger" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Открыть меню">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mobile-menu" id="mobile-menu">
+      <nav aria-label="Мобильная навигация">
+        <a href="#features">Возможности</a>
+        <a href="#editor">Скины</a>
+        <a href="#download">Скачать</a>
+        <a class="btn btn-telegram" href="https://t.me/exeyta" target="_blank" rel="noopener noreferrer">Telegram</a>
+      </nav>
+    </div>
   </header>
 
-  <main>
-    <section class="hero">
+  <main id="main">
+    <!-- ================= HERO ================= -->
+    <section class="hero" aria-labelledby="hero-title">
       <div class="hero-copy">
-        <p class="eyebrow">Minecraft · Лаунчер · <strong>Альфа</strong></p>
-        <h1>Лаунчер, который <span class="grad">хочется открывать</span></h1>
-        <p class="lead">
-          Exeyta — тёмный закатный интерфейс, мгновенный запуск, встроенный редактор скинов
-          с авто-слоями и всё на русском.
-        </p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="https://github.com/exeyta/exeyta-launcher/releases/latest/download/ExeytaSetup.exe">Скачать лаунчер</a>
-          <a class="btn btn-ghost" href="#editor">Смотреть редактор</a>
+        <p class="eyebrow" data-hero style="--i:0">Minecraft · Лаунчер · <strong>Альфа</strong></p>
+
+        <h1 class="hero-title" id="hero-title">
+          <span class="w" data-hero style="--i:1">Лаунчер,</span>
+          <span class="w" data-hero style="--i:2">который</span>
+          <span class="w grad" data-hero style="--i:3">хочется</span>
+          <span class="w grad" data-hero style="--i:4">открывать</span>
+        </h1>
+
+        <p class="lead" data-hero style="--i:5">Exeyta — тёмный закатный интерфейс, мгновенный запуск, встроенный редактор скинов с авто-слоями и всё на русском.</p>
+
+        <div class="hero-actions" data-hero style="--i:6">
+          <span class="cta-halo magnetic">
+            <a class="btn btn-primary btn-lg" href="https://github.com/exeyta/exeyta-launcher/releases/latest/download/ExeytaSetup.exe">Скачать лаунчер</a>
+          </span>
+          <a class="btn btn-ghost magnetic" href="#editor">Смотреть редактор</a>
         </div>
-        <ul class="hero-stats">
+
+        <ul class="hero-stats" data-hero style="--i:7">
           <li><strong>Слои</strong><span>база + накладка</span></li>
           <li><strong>3D</strong><span>превью персонажа</span></li>
           <li><strong>Запуск</strong><span>одной кнопкой</span></li>
         </ul>
       </div>
 
-      <div class="hero-visual" id="launcher3d" aria-label="Интерфейс Exeyta Launcher в 3D">
+      <div class="hero-visual" id="launcher3d">
+        <div class="aurora" aria-hidden="true">
+          <span class="aurora-a"></span>
+          <span class="aurora-b"></span>
+        </div>
+
         <div class="stage">
-          <div class="launcher-3d">
-            <div class="launcher-glow"></div>
-            <img src="assets/launcher-ui.svg" alt="Интерфейс Exeyta Launcher" width="1864" height="1036" draggable="false" />
+          <div class="shot-enter">
+            <div class="shot-float">
+              <div class="shot-tilt" id="shot-tilt">
+                <span class="shot-glow" aria-hidden="true"></span>
+                <img src="assets/launcher-ui.svg" alt="Интерфейс Exeyta Launcher" width="1864" height="1036" decoding="async" fetchpriority="high" draggable="false" />
+                <span class="shot-frame" aria-hidden="true"><span class="shot-sheen"></span></span>
+              </div>
+            </div>
           </div>
-          <div class="stage-floor"></div>
+          <span class="stage-floor" aria-hidden="true"></span>
         </div>
       </div>
     </section>
 
-    <section class="features" id="features">
-      <h2>Всё для игры — в одном окне</h2>
-      <p class="section-lead">Без лишних вкладок и хаоса. Запуск, скины, настройки и сообщество.</p>
+    <div class="divider" aria-hidden="true"></div>
+
+    <!-- ================= FEATURES ================= -->
+    <section class="section features" id="features" aria-labelledby="features-title">
+      <span class="sec-glow" aria-hidden="true"></span>
+
+      <div class="section-head">
+        <h2 class="grad reveal" id="features-title">Всё для игры — в одном окне</h2>
+        <p class="section-lead reveal" style="--i:1">Без лишних вкладок и хаоса. Запуск, скины, настройки и сообщество.</p>
+        <span class="head-rule reveal" style="--i:2" aria-hidden="true"></span>
+      </div>
+
       <div class="feature-grid">
-        <article class="card reveal">
-          <div class="card-icon">▶</div>
+        <article class="card reveal" style="--i:1">
+          <span class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M8.5 5.6 18.4 12 8.5 18.4Z" />
+            </svg>
+          </span>
           <h3>Быстрый запуск</h3>
           <p>Версия, память и Java — на одном экране. Одна кнопка «Играть».</p>
         </article>
-        <article class="card reveal">
-          <div class="card-icon">✎</div>
+
+        <article class="card reveal" style="--i:2">
+          <span class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z" />
+              <path d="M14.5 6.5l3 3" />
+            </svg>
+          </span>
           <h3>Редактор скинов</h3>
           <p>Развёртка UV, кисть, заливка, палитра и 3D-превью. Слои (база + накладка) включаются автоматически.</p>
         </article>
-        <article class="card reveal">
-          <div class="card-icon">⚙</div>
+
+        <article class="card reveal" style="--i:3">
+          <span class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="3.2" />
+              <path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2 5.5 5.5" />
+            </svg>
+          </span>
           <h3>Настройки</h3>
           <p>RAM, путь к игре, JVM и язык. Плюс шестерёнка у профиля для учётных записей.</p>
         </article>
-        <article class="card reveal">
-          <div class="card-icon">✈</div>
+
+        <article class="card reveal" style="--i:4">
+          <span class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M21 4 3 11l6.5 2.4L21 4Z" />
+              <path d="M21 4 9.5 13.4V20l3.4-4.2L21 4Z" />
+            </svg>
+          </span>
           <h3>Telegram</h3>
           <p>Кнопка сообщества прямо в боковой панели — новости и поддержка рядом.</p>
         </article>
       </div>
     </section>
 
-    <section class="editor-spotlight" id="editor">
+    <div class="divider" aria-hidden="true"></div>
+
+    <!-- ================= EDITOR ================= -->
+    <section class="section editor-spotlight" id="editor" aria-labelledby="editor-title">
+      <span class="sec-glow sec-glow-alt" aria-hidden="true"></span>
+
       <div class="editor-copy reveal">
-        <h2>Редактор скина без лишнего</h2>
+        <h2 class="grad" id="editor-title">Редактор скина без лишнего</h2>
         <p>
           Как в любимых редакторах: тело разложено на части, кисть 1 px, зум и вращение
           модели мышью. Сохранение, импорт PNG и применение в игру — в один клик.
@@ -106,7 +201,117 @@
           <li>Тёмная тема в стиле лаунчера</li>
         </ul>
       </div>
-      <div class="editor-visual reveal">
+
+      <div class="editor-visual reveal" style="--i:1">
+        <svg class="skin-mock" viewBox="0 0 560 360" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="mkBg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#241430" />
+              <stop offset="55%" stop-color="#150C1E" />
+              <stop offset="100%" stop-color="#0D0713" />
+            </linearGradient>
+            <linearGradient id="mkSun" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#FF8A3D" />
+              <stop offset="100%" stop-color="#FF4D6D" />
+            </linearGradient>
+            <radialGradient id="mkStage" cx="50%" cy="38%" r="70%">
+              <stop offset="0%" stop-color="#5A2A48" />
+              <stop offset="100%" stop-color="#0C0610" />
+            </radialGradient>
+            <pattern id="mkChk" width="20" height="20" patternUnits="userSpaceOnUse">
+              <rect width="10" height="10" fill="#2A1834" />
+              <rect x="10" y="10" width="10" height="10" fill="#2A1834" />
+              <rect x="10" width="10" height="10" fill="#1C1024" />
+              <rect y="10" width="10" height="10" fill="#1C1024" />
+            </pattern>
+            <filter id="mkGlow" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="7" result="b" />
+              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+
+          <rect x="0" y="0" width="560" height="360" rx="22" fill="url(#mkBg)" />
+          <rect x="0.5" y="0.5" width="559" height="359" rx="21.5" fill="none" stroke="#ffffff" stroke-opacity="0.1" />
+
+          <!-- панель инструментов -->
+          <rect x="14" y="14" width="44" height="332" rx="14" fill="#100810" stroke="#ffffff" stroke-opacity="0.08" />
+          <g class="mk-tools" fill="none" stroke="#C9B6D4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="22" y="26" width="28" height="28" rx="9" fill="#FFB703" fill-opacity="0.14" stroke="#FF8A3D" class="mk-tool-active" />
+            <path d="M31 34 l8 8 M31 42 l4 4" stroke="#FFE0B8" />
+            <rect x="22" y="66" width="28" height="28" rx="9" fill="#1C1024" stroke="none" />
+            <path d="M30 74 h12 v10 h-12 z" />
+            <rect x="22" y="106" width="28" height="28" rx="9" fill="#1C1024" stroke="none" />
+            <path d="M30 120 a6 6 0 0 1 12 0" />
+            <rect x="22" y="146" width="28" height="28" rx="9" fill="#1C1024" stroke="none" />
+            <path d="M30 160 h12 M36 154 v12" />
+            <rect x="22" y="186" width="28" height="28" rx="9" fill="#1C1024" stroke="none" />
+            <path d="M30 200 h12" />
+          </g>
+
+          <!-- палитра -->
+          <rect x="70" y="14" width="44" height="332" rx="14" fill="#100810" stroke="#ffffff" stroke-opacity="0.08" />
+          <g>
+            <circle cx="92" cy="40" r="9" fill="#FF4D4D" />
+            <circle cx="92" cy="70" r="9" fill="#FF8A3D" />
+            <circle cx="92" cy="100" r="9" fill="#FFD166" />
+            <circle cx="92" cy="130" r="9" fill="#3DDC84" />
+            <circle cx="92" cy="160" r="9" fill="#4CC9F0" />
+            <circle cx="92" cy="190" r="9" fill="#7C6BFF" />
+            <circle cx="92" cy="220" r="9" fill="#FF4D88" />
+            <circle cx="92" cy="256" r="11.5" fill="none" stroke="#FFF6EE" stroke-width="2" class="mk-ring" />
+            <circle cx="92" cy="256" r="9" fill="#F1C7A4" />
+            <circle cx="92" cy="288" r="9" fill="#5C4033" />
+            <circle cx="92" cy="318" r="9" fill="#F7F4F2" />
+          </g>
+
+          <!-- холст -->
+          <rect x="126" y="14" width="300" height="332" rx="14" fill="#0C0610" stroke="#ffffff" stroke-opacity="0.08" />
+          <rect x="136" y="24" width="280" height="312" rx="10" fill="url(#mkChk)" />
+          <text x="140" y="44" fill="#FFD0E0" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="600">UV</text>
+
+          <!-- UV-части тела -->
+          <g stroke="#ffffff" stroke-opacity="0.22">
+            <rect x="168" y="56" width="76" height="76" rx="4" fill="#4A3728" />
+            <rect x="150" y="150" width="76" height="92" rx="4" fill="#3D7EE8" />
+            <rect x="234" y="150" width="76" height="92" rx="4" fill="#F1C7A4" />
+            <rect x="318" y="150" width="56" height="92" rx="4" fill="#E2B48F" />
+            <rect x="150" y="252" width="60" height="72" rx="4" fill="#2C3348" />
+            <rect x="218" y="252" width="60" height="72" rx="4" fill="#3A4258" />
+            <rect x="286" y="252" width="88" height="46" rx="4" fill="#1F2430" />
+          </g>
+          <rect x="168" y="56" width="76" height="18" fill="#4A3728" />
+          <rect x="184" y="94" width="10" height="10" fill="#2B1B12" />
+          <rect x="216" y="94" width="10" height="10" fill="#2B1B12" />
+          <rect x="196" y="114" width="20" height="4" rx="1" fill="#D4897A" />
+
+          <!-- выделение + курсор кисти -->
+          <rect class="mk-marquee" x="164" y="52" width="84" height="84" rx="6" fill="none" stroke="#4DE1FF" stroke-width="1.5" stroke-dasharray="7 6" />
+          <g class="mk-brush" filter="url(#mkGlow)">
+            <circle cx="252" cy="140" r="9" fill="none" stroke="#4DE1FF" stroke-width="1.5" />
+            <circle cx="252" cy="140" r="1.6" fill="#4DE1FF" />
+          </g>
+
+          <!-- 3D-превью -->
+          <rect x="438" y="14" width="108" height="332" rx="14" fill="url(#mkStage)" stroke="#ffffff" stroke-opacity="0.08" />
+          <text x="492" y="38" text-anchor="middle" fill="#D7ECFF" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="2">3D</text>
+          <ellipse cx="492" cy="300" rx="40" ry="9" fill="#FF8A3D" opacity="0.22" class="mk-shadow" />
+          <g transform="translate(492,196)">
+            <rect x="-16" y="52" width="13" height="56" rx="2" fill="#2C3348" />
+            <rect x="3" y="52" width="13" height="56" rx="2" fill="#3A4258" />
+            <rect x="-24" y="4" width="48" height="50" rx="3" fill="#3D7EE8" />
+            <rect x="-36" y="6" width="12" height="44" rx="3" fill="#F1C7A4" />
+            <rect x="24" y="6" width="12" height="44" rx="3" fill="#E2B48F" />
+            <rect x="-26" y="-44" width="52" height="48" rx="4" fill="#F1C7A4" />
+            <rect x="-26" y="-44" width="52" height="16" fill="#4A3728" />
+            <rect x="-26" y="-44" width="10" height="34" fill="#4A3728" />
+            <rect x="-13" y="-24" width="8" height="8" fill="#2B1B12" />
+            <rect x="5" y="-24" width="8" height="8" fill="#2B1B12" />
+            <rect x="-11" y="-22" width="2.4" height="2.4" fill="#ffffff" />
+            <rect x="7" y="-22" width="2.4" height="2.4" fill="#ffffff" />
+          </g>
+          <rect class="mk-scan" x="438" y="14" width="108" height="332" rx="14" fill="#4DE1FF" opacity="0.05" />
+        </svg>
+
         <div class="mock-panels">
           <span class="mock-chip">P · F · E · U</span>
           <span class="mock-chip accent">Сохранить</span>
@@ -114,22 +319,54 @@
       </div>
     </section>
 
-    <section class="download" id="download">
+    <div class="divider" aria-hidden="true"></div>
+
+    <!-- ================= DOWNLOAD ================= -->
+    <section class="section download" id="download" aria-labelledby="download-title">
       <div class="download-card reveal">
-        <h2>Готов играть?</h2>
-        <p>Скачай Exeyta Launcher для Windows — установщик сразу с последнего релиза GitHub. Скоро — больше платформ.</p>
-        <a class="btn btn-primary btn-lg" href="https://github.com/exeyta/exeyta-launcher/releases/latest/download/ExeytaSetup.exe">Скачать для Windows</a>
-        <p class="fine">⭐ <strong>АЛЬФА-ВЕРСИЯ</strong> · всегда последняя сборка с GitHub Releases · исходный код: <a href="https://github.com/exeyta/exeyta-launcher" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+        <span class="dl-sheen" aria-hidden="true"></span>
+        <div class="dl-inner">
+          <h2 class="grad" id="download-title">Готов играть?</h2>
+          <p>Скачай Exeyta Launcher для Windows — установщик сразу с последнего релиза GitHub. Скоро — больше платформ.</p>
+          <span class="cta-halo magnetic">
+            <a class="btn btn-primary btn-lg" href="https://github.com/exeyta/exeyta-launcher/releases/latest/download/ExeytaSetup.exe">Скачать для Windows</a>
+          </span>
+          <p class="fine">⭐ <strong>АЛЬФА-ВЕРСИЯ</strong> · всегда последняя сборка с GitHub Releases · исходный код: <a href="https://github.com/exeyta/exeyta-launcher" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+        </div>
       </div>
     </section>
   </main>
 
   <footer class="footer">
-    <p>© <span id="year"></span> Exeyta Launcher</p>
-    <a href="https://t.me/exeyta" target="_blank" rel="noopener noreferrer">Telegram</a>
-    <a href="https://github.com/exeyta/exeyta-launcher" target="_blank" rel="noopener noreferrer">GitHub</a>
+    <div class="footer-inner">
+      <p>© <span id="year"></span> Exeyta Launcher</p>
+      <nav class="footer-links" aria-label="Ссылки проекта">
+        <a href="https://t.me/exeyta" target="_blank" rel="noopener noreferrer">Telegram</a>
+        <a href="https://github.com/exeyta/exeyta-launcher" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </nav>
+    </div>
   </footer>
 
-  <script src="js/main.js"></script>
+  <!-- Пасхалка: 5 кликов по иконке сайта -->
+  <div class="easter" id="easter" role="dialog" aria-modal="true" aria-label="Пасхалка: 67">
+    <span class="easter-bg" aria-hidden="true">
+      <span class="easter-mesh easter-mesh-a"></span>
+      <span class="easter-mesh easter-mesh-b"></span>
+      <span class="easter-rays"></span>
+    </span>
+
+    <button class="easter-close" type="button" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false">
+        <path d="M6 6l12 12M18 6L6 18" />
+      </svg>
+    </button>
+
+    <div class="easter-content">
+      <div class="easter-num"><span>67</span></div>
+      <p class="easter-note">Скинь этот скрин в чат <a href="https://t.me/ouroptions" target="_blank" rel="noopener noreferrer">https://t.me/ouroptions</a></p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="28 22 1864 1036" width="1864" height="1036">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="28 22 1864 1036" width="1864" height="1036" role="img">
+<title>Интерфейс Exeyta Launcher</title>
 <defs>
 <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#100710"/><stop offset="45%" stop-color="#1a0c16"/><stop offset="100%" stop-color="#2a1220"/></linearGradient>
 <linearGradient id="sun" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffe08a"/><stop offset="42%" stop-color="#ff8a3d"/><stop offset="100%" stop-color="#ff4d88"/></linearGradient>
@@ -15,12 +16,41 @@
 <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#000" flood-opacity="0.55"/></filter>
 <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 <clipPath id="win"><rect x="28" y="22" width="1864" height="1036" rx="28"/></clipPath>
+<linearGradient id="edgeLineV" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8a3d" stop-opacity="0"/><stop offset="16%" stop-color="#ff8a3d" stop-opacity="0.95"/><stop offset="58%" stop-color="#7c4dff" stop-opacity="0.85"/><stop offset="100%" stop-color="#4de1ff" stop-opacity="0"/></linearGradient>
+<linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ffffff" stop-opacity="0"/><stop offset="50%" stop-color="#ffffff" stop-opacity="0.5"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+<clipPath id="playClip"><rect x="352" y="602" width="382" height="70" rx="18"/></clipPath>
+<style><![CDATA[
+.ex-orb-a{animation:exFloatA 15s ease-in-out infinite;transform-box:view-box}
+.ex-orb-b{animation:exFloatB 19s ease-in-out infinite;transform-box:view-box}
+.ex-accent{animation:exDash 8s linear infinite}
+.ex-ring{transform-box:fill-box;transform-origin:center;animation:exRing 3.2s cubic-bezier(.16,1,.3,1) infinite}
+.ex-sweep{transform-box:view-box;animation:exSweep 5.5s cubic-bezier(.4,0,.2,1) infinite}
+.ex-pulse{animation:exPulse 4.4s ease-in-out infinite}
+.ex-glow{animation:exGlow 5.2s ease-in-out infinite}
+.ex-shadow{transform-box:fill-box;transform-origin:center;animation:exShadow 4.2s ease-in-out infinite}
+.ex-sel{animation:exSel 3.4s ease-in-out infinite}
+@keyframes exFloatA{0%,100%{transform:translate(0,0)}50%{transform:translate(26px,-32px)}}
+@keyframes exFloatB{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,26px)}}
+@keyframes exDash{to{stroke-dashoffset:-264}}
+@keyframes exRing{0%,100%{opacity:.9;transform:scale(1)}50%{opacity:.35;transform:scale(.982)}}
+@keyframes exSweep{0%{transform:translateX(-160px)}52%,100%{transform:translateX(430px)}}
+@keyframes exPulse{0%,100%{opacity:.62}50%{opacity:1}}
+@keyframes exGlow{0%,100%{opacity:.78}50%{opacity:1}}
+@keyframes exShadow{0%,100%{transform:scale(.9);opacity:.72}50%{transform:scale(1.1);opacity:1}}
+@keyframes exSel{0%,100%{opacity:1}50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){*{animation:none !important}}
+]]></style>
 </defs>
 <g>
 <rect x="28" y="22" width="1864" height="1036" fill="url(#bg)"/>
 <rect x="28" y="22" width="1864" height="3" fill="url(#sunH)"/>
 <rect x="28" y="22" width="280" height="1036" fill="url(#side)"/>
 <line x1="308" y1="22" x2="308" y2="1058" stroke="#ffffff" stroke-opacity="0.06"/>
+<g aria-hidden="true">
+<ellipse class="ex-orb-a" cx="1690" cy="300" rx="380" ry="300" fill="url(#orbA)" opacity="0.55"/>
+<ellipse class="ex-orb-b" cx="660" cy="960" rx="360" ry="260" fill="url(#orbB)" opacity="0.45"/>
+<line class="ex-accent" x1="308" y1="22" x2="308" y2="1058" stroke="url(#edgeLineV)" stroke-width="2" stroke-dasharray="44 28" stroke-opacity="0.65"/>
+</g>
 <g transform="translate(58,58)">
 <rect x="0" y="0" width="42" height="42" rx="13" fill="url(#sun)"/>
 <text x="21" y="28" text-anchor="middle" fill="#1a0a10" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="800">E</text>
@@ -47,7 +77,7 @@
 <text x="112" y="352" fill="#e7d5df" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="500">&#1053;&#1072;&#1089;&#1090;&#1088;&#1086;&#1081;&#1082;&#1080;</text>
 <text x="60" y="412" fill="#8d7084" font-family="Segoe UI, Arial, sans-serif" font-size="11" letter-spacing="1.8">&#1057;&#1054;&#1054;&#1041;&#1065;&#1045;&#1057;&#1058;&#1042;&#1054;</text>
 <g filter="url(#glow)">
-<rect x="52" y="430" width="232" height="50" rx="16" fill="#2AABEE"/>
+<rect class="ex-glow" x="52" y="430" width="232" height="50" rx="16" fill="#2AABEE"/>
 </g>
 <path d="M78 447 L116 455 L78 463 L88 455 Z" fill="#ffffff"/>
 <text x="132" y="460" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700">Telegram</text>
@@ -75,7 +105,7 @@
 <text x="372" y="250" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">&#1055;&#1072;&#1084;&#1103;&#1090;&#1100;</text>
 <text x="714" y="250" text-anchor="end" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">6 GB</text>
 <rect x="372" y="264" width="342" height="6" rx="3" fill="#2a1834"/>
-<rect x="372" y="264" width="210" height="6" rx="3" fill="url(#sunH)"/>
+<rect class="ex-pulse" x="372" y="264" width="210" height="6" rx="3" fill="url(#sunH)"/>
 <line x1="372" y1="286" x2="714" y2="286" stroke="#ffffff10"/>
 <text x="372" y="318" fill="#b9a3b4" font-family="Segoe UI, Arial, sans-serif" font-size="12">Java</text>
 <text x="714" y="318" text-anchor="end" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">21 Temurin</text>
@@ -89,6 +119,8 @@
 <g filter="url(#glow)">
 <rect x="352" y="602" width="382" height="70" rx="18" fill="url(#sun)"/>
 </g>
+<rect class="ex-ring" x="358" y="608" width="370" height="58" rx="14" fill="none" stroke="#FFF3D9" stroke-width="2" stroke-opacity="0.8"/>
+<g clip-path="url(#playClip)"><rect class="ex-sweep" x="352" y="602" width="130" height="70" fill="url(#sweep)"/></g>
 <text x="543" y="646" text-anchor="middle" fill="#1a0a10" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="3">&#1048;&#1043;&#1056;&#1040;&#1058;&#1068;</text>
 <rect x="774" y="48" width="1090" height="648" rx="22" fill="url(#card)" stroke="#ff4d8828" stroke-width="1"/>
 <clipPath id="sh822"><rect x="774" y="48" width="1090" height="648" rx="22"/></clipPath>
@@ -118,7 +150,7 @@
 <circle cx="927" cy="288" r="10" fill="#4cc9f0"/>
 <circle cx="927" cy="322" r="10" fill="#7c6bff"/>
 <circle cx="927" cy="356" r="10" fill="#ff4d88"/>
-<circle cx="927" cy="390" r="13" fill="none" stroke="#fff8f2" stroke-width="2"/>
+<circle class="ex-sel" cx="927" cy="390" r="13" fill="none" stroke="#fff8f2" stroke-width="2"/>
 <circle cx="927" cy="390" r="10" fill="#f1c7a4"/>
 <circle cx="927" cy="424" r="10" fill="#5c4033"/>
 <circle cx="927" cy="458" r="10" fill="#1f2430"/>
@@ -145,7 +177,7 @@
 <text x="1016" y="420" fill="#ffd0e0" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600">&#1058;&#1077;&#1083;&#1086;, &#1088;&#1091;&#1082;&#1080;, &#1085;&#1086;&#1075;&#1080;</text>
 <rect x="1504" y="124" width="336" height="448" rx="16" fill="url(#stage)" stroke="#ffffff10"/>
 <text x="1672" y="152" text-anchor="middle" fill="#d7ecff" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2">3D</text>
-<ellipse cx="1672" cy="500" rx="78" ry="16" fill="#ff8a3d" opacity="0.18"/>
+<ellipse class="ex-shadow" cx="1672" cy="500" rx="78" ry="16" fill="#ff8a3d" opacity="0.18"/>
 <ellipse cx="1672" cy="508" rx="46" ry="8" fill="#000" opacity="0.45"/>
 <g transform="translate(1672,236)">
 <rect x="-20" y="132" width="16" height="78" rx="2" fill="#2c3348"/>
@@ -187,7 +219,7 @@
 <rect x="374" y="856" width="288" height="42" rx="12" fill="#1c1024"/>
 <text x="388" y="882" fill="#fff8f2" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600">6 GB</text>
 <rect x="374" y="918" width="288" height="6" rx="3" fill="#2a1834"/>
-<rect x="374" y="918" width="180" height="6" rx="3" fill="url(#sunH)"/>
+<rect class="ex-pulse" style="animation-delay:-1.6s" x="374" y="918" width="180" height="6" rx="3" fill="url(#sunH)"/>
 <text x="374" y="960" fill="#e7d5df" font-family="Segoe UI, Arial, sans-serif" font-size="13">&#1040;&#1074;&#1090;&#1086;&#1079;&#1072;&#1087;&#1091;&#1089;&#1082;</text>
 <rect x="602" y="944" width="40" height="22" rx="11" fill="url(#sunH)"/>
 <circle cx="630" cy="955" r="8" fill="#fff"/>
