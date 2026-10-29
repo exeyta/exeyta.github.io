@@ -2,17 +2,13 @@
   <title>Exeyta Launcher</title>
   <defs>
     <linearGradient id="fg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#FFD98A" />
-      <stop offset="45%" stop-color="#FF8A3D" />
-      <stop offset="100%" stop-color="#FF4D6D" />
-    </linearGradient>
-    <linearGradient id="fv" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0%" stop-color="#7C4DFF" stop-opacity="0.85" />
-      <stop offset="100%" stop-color="#4DE1FF" stop-opacity="0.35" />
+      <stop offset="0%" stop-color="#DDC27E" />
+      <stop offset="55%" stop-color="#C9A45C" />
+      <stop offset="100%" stop-color="#A8843C" />
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="15" fill="#0A0710" />
-  <rect x="3.5" y="3.5" width="57" height="57" rx="13" fill="url(#fv)" opacity="0.5" />
+  <rect width="64" height="64" rx="15" fill="#121317" />
+  <rect x="3.5" y="3.5" width="57" height="57" rx="13" fill="#C9A45C" opacity="0.10" />
   <rect x="6" y="6" width="52" height="52" rx="12" fill="url(#fg)" />
-  <path d="M21 17h23v7.4H29.4v6.1H42v7.4H29.4v6.6H45V47H21z" fill="#1A0710" />
+  <path d="M21 17h23v7.4H29.4v6.1H42v7.4H29.4v6.6H45V47H21z" fill="#1C1609" />
 </svg>
