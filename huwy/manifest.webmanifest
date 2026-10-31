@@ -1,0 +1,13 @@
+{
+  "name": "Huwy Wallet",
+  "short_name": "Huwy",
+  "description": "Игровой кошелёк HUWY",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0e14",
+  "theme_color": "#0b0e14",
+  "icons": [
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
