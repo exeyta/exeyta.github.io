@@ -325,7 +325,7 @@ function drawChart() {
   c.clearRect(0, 0, W, H);
   c.strokeStyle = "#26314a"; c.fillStyle = "#93a0bb"; c.font = "11px monospace";
   for (let g = 0; g < 4; g++) {
-    const y = 10 + (g * (H - 20)) / 3);
+    const y = 10 + (g * (H - 20)) / 3;
     c.beginPath(); c.moveTo(40, y); c.lineTo(W - 6, y); c.stroke();
     c.fillText((mx - (rg * g) / 3).toFixed(4), 2, y + 3);
   }
@@ -346,12 +346,6 @@ $("#dlBtn").onclick = () => {
   if (!img) return msg("QR ещё не готов");
   const a = document.createElement("a"); a.download = "huwy-qr.png"; a.href = img.src || img.toDataURL(); a.click();
 };
-let deferredPrompt = null;
-window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredPrompt = e; $("#installBanner").classList.remove("hidden"); });
-$("#installAppBtn").onclick = async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; } $("#installBanner").classList.add("hidden"); };
-$("#installDismissBtn").onclick = () => $("#installBanner").classList.add("hidden");
-$("#installBtn").onclick = () => $("#installBanner").classList.toggle("hidden");
-
 /* ================= рендер ================= */
 function renderRate() {
   const p = price();
