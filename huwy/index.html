@@ -13,30 +13,21 @@
   <link rel="apple-touch-icon" href="./icons/icon.svg" />
   <title>Huwy Wallet — игровой кошелёк</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="./assets/css/style.css" />
+  <link rel="stylesheet" href="./assets/css/style.css?v=3" />
   <!-- Библиотеки с CDN (не фреймворки, сборки не требуют): QR + сканер + Firebase -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js" defer></script>
-  <script src="./assets/js/config.js" defer></script>
-  <script src="./assets/js/app.js" defer></script>
+  <script src="./assets/js/config.js?v=3" defer></script>
+  <script src="./assets/js/app.js?v=3" defer></script>
 </head>
 <body>
-  <aside id="installBanner" class="install-banner hidden">
-    <div><strong>Huwy Wallet</strong><br /><span class="muted">Установи как приложение с главного экрана</span></div>
-    <div class="row" style="margin-left:auto">
-      <button type="button" class="btn sm" id="installAppBtn">Установить</button>
-      <button type="button" class="btn ghost sm" id="installDismissBtn">×</button>
-    </div>
-  </aside>
-
   <header class="top">
     <div class="brand">Huwy <span>Wallet</span></div>
     <div class="rate" id="ratePill">1 ₽ = 10 HUWY</div>
     <div class="rate" id="modeBadge">Firebase</div>
-    <button class="btn ghost sm" id="installBtn" style="width:auto;margin:0">Установить</button>
   </header>
 
   <main>
