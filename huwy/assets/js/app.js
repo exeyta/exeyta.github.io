@@ -81,10 +81,10 @@ async function ensureProfile(uid, login) {
     address = randAddr();
   }
   await R("logins/" + login).transaction((cur) => (cur ? undefined : { uid }));
+  if ((await val("logins/" + login))?.uid !== uid) return "taken";
   const u = {};
   u["users/" + uid] = { login, address, balance: CFG.START_BONUS, pendingClaim: "", createdAt: TS };
   u["addresses/" + address] = { uid, login };
-  u["logins/" + login] = { uid };
   await R("/").update(u);
   await R("/").update(ledgerEntry(uid, "bonus", CFG.START_BONUS, "Стартовый бонус"));
   return "ok";
