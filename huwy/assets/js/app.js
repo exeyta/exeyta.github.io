@@ -47,7 +47,11 @@ function fbErr(e) {
   const c = (e && e.code) || "";
   if (c.includes("email-already-in-use")) return "Такой логин уже занят";
   if (c.includes("wrong-password") || c.includes("invalid-credential") || c.includes("user-not-found")) return "Неверный логин или пароль";
-  if (c.includes("permission-denied") || c.includes("failed-precondition")) return "Отклонено правилами базы. Обнови страницу и попробуй снова";
+  if (c.includes("unauthorized-domain") || c.includes("referer-blocked")) return "Домен не разрешён: добавь exeyta.github.io в Authentication → Settings → Authorized domains";
+  if (c.includes("operation-not-allowed")) return "Провайдер Email/Password выключен: Authentication → Sign-in method → Email/Password";
+  if (c.includes("admin-restricted")) return "Регистрация закрыта в настройках проекта";
+  if (c.includes("permission-denied") || c.includes("failed-precondition")) return "Отклонено правилами базы: вставь firestore.rules в Firestore → Rules → Publish";
+  if (c.includes("not-found")) return "База не создана: Firestore Database → Create database";
   if (c.includes("unavailable") || c.includes("network")) return "Нет связи с сервером. Проверь интернет";
   return "Ошибка. Попробуй позже";
 }
@@ -92,7 +96,28 @@ function showView(name) {
   if (name === "scan") initScanner(); else stopScanner();
 }
 
-/* ================= регистрация / вход (только логин + пароль) ================= */
+/* создание профиля (идемпотентно): используется при регистрации и при починке */
+async function ensureProfile(uid, login) {
+  const uref = db.collection("users").doc(uid);
+  if ((await uref.get()).exists) return "ok";
+  if ((await db.collection("logins").doc(login).get()).exists) return "taken";
+  let address = randAddr();
+  for (let i = 0; i < 5; i++) {
+    if (!(await db.collection("addresses").doc(address).get()).exists) break;
+    address = randAddr();
+  }
+  await db.runTransaction(async (tx) => {
+    if ((await tx.get(uref)).exists) return;
+    tx.set(uref, {
+      login, address, balance: CFG.START_BONUS, pendingClaim: "",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    tx.set(db.collection("logins").doc(login), { uid });
+    tx.set(db.collection("addresses").doc(address), { uid, login });
+  });
+  await ledgerAddTx(uid, "bonus", CFG.START_BONUS, "Стартовый бонус");
+  return "ok";
+}
 $("#registerForm").onsubmit = async (e) => {
   e.preventDefault(); authErr("");
   const f = new FormData(e.target);
@@ -103,21 +128,8 @@ $("#registerForm").onsubmit = async (e) => {
   try {
     if ((await db.collection("logins").doc(login).get()).exists) return authErr("Такой логин уже занят");
     const cred = await auth.createUserWithEmailAndPassword(FAKE_MAIL(login), pw);
-    const uid = cred.user.uid;
-    let address = randAddr();
-    for (let i = 0; i < 5; i++) {
-      if (!(await db.collection("addresses").doc(address).get()).exists) break;
-      address = randAddr();
-    }
-    await db.runTransaction(async (tx) => {
-      tx.set(db.collection("users").doc(uid), {
-        login, address, balance: CFG.START_BONUS, pendingClaim: "",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      tx.set(db.collection("logins").doc(login), { uid });
-      tx.set(db.collection("addresses").doc(address), { uid, login });
-    });
-    await ledgerAddTx(uid, "bonus", CFG.START_BONUS, "Стартовый бонус");
+    const st = await ensureProfile(cred.user.uid, login);
+    if (st === "taken") { await cred.user.delete().catch(() => {}); await auth.signOut(); return authErr("Такой логин уже занят"); }
     render();
   } catch (err) { authErr(fbErr(err)); }
 };
@@ -364,8 +376,21 @@ async function render() {
   $("#authView").classList.toggle("hidden", !!u);
   $("#dashView").classList.toggle("hidden", !u);
   if (!u) return;
-  const p = await getProfile();
-  if (!p) { authErr("Профиль не найден. Зарегистрируйся заново."); await auth.signOut(); render(); return; }
+  let p;
+  try {
+    p = await getProfile();
+    if (!p) {
+      // залогинен, а профиля нет (сбойная регистрация): чиним на месте
+      const login = (u.email || "").split("@")[0];
+      const st = await ensureProfile(u.uid, login);
+      if (st === "taken") { await auth.signOut(); authErr("Логин занят другим аккаунтом. Войди под своим."); render(); return; }
+      p = await getProfile();
+    }
+  } catch (err) {
+    msg("Нет доступа к базе: " + fbErr(err));
+    return;
+  }
+  if (!p) { await auth.signOut(); authErr("Профиль не найден. Зарегистрируйся заново."); render(); return; }
   $("#balHuwy").textContent = fmt(p.bal) + " HUWY";
   $("#balRub").textContent = "≈ " + fmt(p.bal * price()) + " ₽";
   $("#userLogin").textContent = p.login;
