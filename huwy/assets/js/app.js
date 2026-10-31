@@ -1,8 +1,8 @@
 "use strict";
-/* Huwy Wallet на Firebase (Auth + Firestore). Только логин + пароль.
-   Email провайдер Firebase использует технический логин@huwy.local — юзер его не видит.
-   P2P — эскроу: отправитель списывает и создаёт перевод, получатель забирает.
-   Правила firestore.rules запрещают любую другую накрутку баланса. */
+/* Huwy Wallet на Firebase (Auth + Realtime Database). Только логин + пароль.
+   Email для Auth технический: логин@huwy.local — юзер его не видит.
+   P2P — эскроу: отправитель списывает и создаёт перевод одним атомарным update,
+   получатель забирает. Правила database.rules.json запрещают любую накрутку. */
 const CFG = window.HUWY_CONFIG;
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -11,13 +11,16 @@ const fmt = (n) => (Math.round(n * 100) / 100).toLocaleString("ru-RU");
 
 firebase.initializeApp(CFG.FIREBASE);
 const auth = firebase.auth();
-const db = firebase.firestore();
+const rdb = firebase.database();
+const TS = firebase.database.ServerValue.TIMESTAMP;
 const FAKE_MAIL = (login) => login.toLowerCase() + "@huwy.local";
 const validAddr = (a) => /^HUWY-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{8}$/.test(a);
 function randAddr() {
   const h = "0123456789ABCDEF", p = (n) => Array.from({ length: n }, () => h[(Math.random() * 16) | 0]).join("");
   return "HUWY-" + p(4) + "-" + p(4) + "-" + p(8);
 }
+const R = (p) => rdb.ref(p);
+const val = async (p) => (await R(p).get()).val();
 
 /* ================= цена (индикатор для графика) ================= */
 function genPrice(seed) {
@@ -44,15 +47,13 @@ function msg(err, ok) {
 }
 function authErr(t) { const e = $("#authErr"); e.hidden = !t; if (t) e.textContent = t; }
 function fbErr(e) {
-  const c = (e && e.code) || "";
+  const c = String((e && e.code) || "") + " " + String((e && e.message) || "");
   if (c.includes("email-already-in-use")) return "Такой логин уже занят";
-  if (c.includes("wrong-password") || c.includes("invalid-credential") || c.includes("user-not-found")) return "Неверный логин или пароль";
-  if (c.includes("unauthorized-domain") || c.includes("referer-blocked")) return "Домен не разрешён: добавь exeyta.github.io в Authentication → Settings → Authorized domains";
-  if (c.includes("operation-not-allowed")) return "Провайдер Email/Password выключен: Authentication → Sign-in method → Email/Password";
-  if (c.includes("admin-restricted")) return "Регистрация закрыта в настройках проекта";
-  if (c.includes("permission-denied") || c.includes("failed-precondition")) return "Отклонено правилами базы: вставь firestore.rules в Firestore → Rules → Publish";
-  if (c.includes("not-found")) return "База не создана: Firestore Database → Create database";
-  if (c.includes("unavailable") || c.includes("network")) return "Нет связи с сервером. Проверь интернет";
+  if (c.includes("wrong-password") || c.includes("invalid-credential") || c.includes("user-not-found") || c.includes("user-not-found")) return "Неверный логин или пароль";
+  if (c.includes("unauthorized-domain")) return "Домен не разрешён: добавь exeyta.github.io в Authentication → Settings → Authorized domains";
+  if (c.includes("operation-not-allowed")) return "Провайдер Email/Password выключен: Authentication → Sign-in method";
+  if (c.includes("PERMISSION_DENIED")) return "Отклонено правилами базы: вставь database.rules.json в Realtime Database → Rules → Publish";
+  if (c.includes("unavailable") || c.includes("network") || c.includes("DISCONNECTED")) return "Нет связи с сервером. Проверь интернет";
   return "Ошибка. Попробуй позже";
 }
 const me = () => auth.currentUser;
@@ -60,25 +61,33 @@ const isAdmin = () => !!(CFG.ADMIN_UID && me() && me().uid === CFG.ADMIN_UID);
 
 async function getProfile() {
   const u = me(); if (!u) return null;
-  const d = await db.collection("users").doc(u.uid).get();
-  if (!d.exists) return null;
-  const p = d.data();
+  const p = await val("users/" + u.uid);
+  if (!p) return null;
   return { login: p.login, address: p.address, bal: Number(p.balance), uid: u.uid };
 }
-async function ledgerAdd(tx, uid, kind, amt, note) {
-  tx.set(db.collection("ledger").doc(uid).collection("items").doc(),
-    { uid, kind, amt, note: String(note || "").slice(0, 140), t: firebase.firestore.FieldValue.serverTimestamp() });
+function ledgerEntry(uid, kind, amt, note) {
+  const k = R("ledger/" + uid).push().key;
+  const u = {};
+  u["ledger/" + uid + "/" + k] = { uid, kind, amt, note: String(note || "").slice(0, 140), t: TS };
+  return u;
 }
-async function getHist() {
-  const u = me(); if (!u) return [];
-  const out = [];
-  const s1 = await db.collection("transfers").where("fromUid", "==", u.uid).get();
-  s1.forEach((d) => { const t = d.data(); out.push({ t: t.t ? t.t.toMillis() : 0, kind: "out", amt: -t.amount, note: (t.memo ? t.memo + " · " : "") + t.toAddr }); });
-  const s2 = await db.collection("transfers").where("toUid", "==", u.uid).get();
-  s2.forEach((d) => { const t = d.data(); out.push({ t: t.t ? t.t.toMillis() : 0, kind: "in", amt: t.amount, note: "от " + t.fromLogin + (t.memo ? " · " + t.memo : "") }); });
-  const s3 = await db.collection("ledger").doc(u.uid).collection("items").get();
-  s3.forEach((d) => { const t = d.data(); out.push({ t: t.t ? t.t.toMillis() : 0, kind: t.kind, amt: Number(t.amt), note: t.note }); });
-  return out.sort((a, b) => b.t - a.t).slice(0, 100);
+/* создание профиля (идемпотентно) */
+async function ensureProfile(uid, login) {
+  if (await val("users/" + uid)) return "ok";
+  if (await val("logins/" + login)) return "taken";
+  let address = randAddr();
+  for (let i = 0; i < 5; i++) {
+    if (!(await val("addresses/" + address))) break;
+    address = randAddr();
+  }
+  await R("logins/" + login).transaction((cur) => (cur ? undefined : { uid }));
+  const u = {};
+  u["users/" + uid] = { login, address, balance: CFG.START_BONUS, pendingClaim: "", createdAt: TS };
+  u["addresses/" + address] = { uid, login };
+  u["logins/" + login] = { uid };
+  await R("/").update(u);
+  await R("/").update(ledgerEntry(uid, "bonus", CFG.START_BONUS, "Стартовый бонус"));
+  return "ok";
 }
 
 /* ================= вкладки ================= */
@@ -92,32 +101,11 @@ function showView(name) {
   $$(".seg-btn").forEach((x) => x.classList.toggle("active", x.dataset.view === name));
   $$(".view").forEach((v) => v.classList.add("hidden"));
   $("#view-" + name).classList.remove("hidden");
-  if (name === "hist") renderHist();
+  if (name === "hist") { renderHist(); renderIncoming(); renderOutbox(); }
   if (name === "scan") initScanner(); else stopScanner();
 }
 
-/* создание профиля (идемпотентно): используется при регистрации и при починке */
-async function ensureProfile(uid, login) {
-  const uref = db.collection("users").doc(uid);
-  if ((await uref.get()).exists) return "ok";
-  if ((await db.collection("logins").doc(login).get()).exists) return "taken";
-  let address = randAddr();
-  for (let i = 0; i < 5; i++) {
-    if (!(await db.collection("addresses").doc(address).get()).exists) break;
-    address = randAddr();
-  }
-  await db.runTransaction(async (tx) => {
-    if ((await tx.get(uref)).exists) return;
-    tx.set(uref, {
-      login, address, balance: CFG.START_BONUS, pendingClaim: "",
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    tx.set(db.collection("logins").doc(login), { uid });
-    tx.set(db.collection("addresses").doc(address), { uid, login });
-  });
-  await ledgerAddTx(uid, "bonus", CFG.START_BONUS, "Стартовый бонус");
-  return "ok";
-}
+/* ================= регистрация / вход ================= */
 $("#registerForm").onsubmit = async (e) => {
   e.preventDefault(); authErr("");
   const f = new FormData(e.target);
@@ -126,17 +114,13 @@ $("#registerForm").onsubmit = async (e) => {
   if (!/^[a-z0-9_а-яё-]{3,24}$/.test(login)) return authErr("Только буквы, цифры, _ и -");
   if (pw.length < 6) return authErr("Пароль минимум 6 символов");
   try {
-    if ((await db.collection("logins").doc(login).get()).exists) return authErr("Такой логин уже занят");
+    if (await val("logins/" + login)) return authErr("Такой логин уже занят");
     const cred = await auth.createUserWithEmailAndPassword(FAKE_MAIL(login), pw);
     const st = await ensureProfile(cred.user.uid, login);
     if (st === "taken") { await cred.user.delete().catch(() => {}); await auth.signOut(); return authErr("Такой логин уже занят"); }
     render();
   } catch (err) { authErr(fbErr(err)); }
 };
-async function ledgerAddTx(uid, kind, amt, note) {
-  await db.collection("ledger").doc(uid).collection("items").add(
-    { uid, kind, amt, note: String(note || "").slice(0, 140), t: firebase.firestore.FieldValue.serverTimestamp() });
-}
 $("#loginForm").onsubmit = async (e) => {
   e.preventDefault(); authErr("");
   const f = new FormData(e.target);
@@ -158,80 +142,102 @@ $("#sendForm").onsubmit = async (e) => {
   if (amt > 1000000) return msg("Слишком большая сумма");
   try {
     const u = me(); if (!u) return msg("Войди снова");
-    const rc = await db.collection("addresses").doc(to).get();
-    if (!rc.exists) return msg("Получатель не найден");
-    if (rc.data().uid === u.uid) return msg("Нельзя отправить самому себе");
-    await db.runTransaction(async (tx) => {
-      const sdoc = await tx.get(db.collection("users").doc(u.uid));
-      if (!sdoc.exists) throw { code: "no-profile" };
-      if (Number(sdoc.data().balance) < amt) throw { code: "funds" };
-      const tid = db.collection("transfers").doc().id;
-      tx.set(db.collection("transfers").doc(tid), {
-        fromUid: u.uid, fromLogin: sdoc.data().login,
-        toUid: rc.data().uid, toAddr: to, amount: amt,
-        memo: memo.slice(0, 120), claimed: false,
-        t: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      tx.update(db.collection("users").doc(u.uid), { balance: Number(sdoc.data().balance) - amt });
-    });
-    await ledgerAddTx(u.uid, "out", -amt, (memo ? memo + " · " : "") + to);
+    const rc = await val("addresses/" + to);
+    if (!rc) return msg("Получатель не найден");
+    if (rc.uid === u.uid) return msg("Нельзя отправить самому себе");
+    const prof = await val("users/" + u.uid);
+    if (!prof || Number(prof.balance) < amt) return msg("Недостаточно средств");
+    const tid = R("users/" + u.uid + "/outbox").push().key;
+    const lid = R("ledger/" + u.uid).push().key;
+    const up = {};
+    up["users/" + u.uid + "/balance"] = Math.round((Number(prof.balance) - amt) * 100) / 100;
+    up["users/" + u.uid + "/outbox/" + tid] = {
+      toUid: rc.uid, toAddr: to, amount: amt,
+      memo: memo.slice(0, 120), claimed: false, t: TS
+    };
+    up["users/" + rc.uid + "/inbox/" + tid] = {
+      tid, fromUid: u.uid, fromLogin: prof.login, toUid: rc.uid,
+      amount: amt, memo: memo.slice(0, 120), spent: false, t: TS
+    };
+    up["ledger/" + u.uid + "/" + lid] = { uid: u.uid, kind: "out", amt: -amt, note: (memo ? memo + " · " : "") + to, t: TS };
+    await R("/").update(up);
     render(); e.target.reset();
-    msg("", "Отправлено " + fmt(amt) + " HUWY → " + rc.data().login + ". Получатель заберёт во вкладке «История» или перевод появится у него сам.");
-  } catch (err) {
-    if (err && err.code === "funds") return msg("Недостаточно средств");
-    msg(fbErr(err));
-  }
+    msg("", "Отправлено " + fmt(amt) + " HUWY → " + rc.login + ". Заберёт во вкладке «История».");
+  } catch (err) { msg(fbErr(err)); }
 };
 
-/* ================= входящие: забрать ================= */
+/* ================= входящие: забрать / свои незабранные: отменить ================= */
 async function renderIncoming() {
   const u = me(); const box = $("#incomingList"); if (!u || !box) return;
-  const s = await db.collection("transfers").where("toUid", "==", u.uid).get();
-  const list = [];
-  s.forEach((d) => { if (!d.data().claimed) list.push({ id: d.id, ...d.data() }); });
-  box.innerHTML = list.length ? list.map((t) =>
+  const all = (await val("users/" + u.uid + "/inbox")) || {};
+  const list = Object.entries(all).filter(([, t]) => t && !t.spent);
+  box.innerHTML = list.length ? list.map(([tid, t]) =>
     '<div class="tx"><span>Входящий · от ' + t.fromLogin + (t.memo ? " · " + t.memo : "") +
-    '</span><span><b>+' + fmt(t.amount) + '</b> <button class="btn ghost sm" data-claim="' + t.id + '" data-amt="' + t.amount + '">Забрать</button></span></div>'
+    '</span><span><b>+' + fmt(t.amount) + '</b> <button class="btn ghost sm" data-claim="' + tid + '">Забрать</button></span></div>'
   ).join("") : "<p class='muted'>Входящих нет</p>";
-  box.querySelectorAll("[data-claim]").forEach((b) => (b.onclick = () => claimTransfer(b.dataset.claim, parseFloat(b.dataset.amt))));
+  box.querySelectorAll("[data-claim]").forEach((b) => (b.onclick = () => claimTransfer(b.dataset.claim)));
 }
-async function claimTransfer(tid, amt) {
+async function claimTransfer(tid) {
   msg("");
   try {
     const u = me();
-    await db.runTransaction(async (tx) => {
-      const tdoc = await tx.get(db.collection("transfers").doc(tid));
-      if (!tdoc.exists || tdoc.data().claimed || tdoc.data().toUid !== u.uid) throw { code: "gone" };
-      const udoc = await tx.get(db.collection("users").doc(u.uid));
-      tx.update(db.collection("transfers").doc(tid), { claimed: true });
-      tx.update(db.collection("users").doc(u.uid), {
-        balance: Math.round((Number(udoc.data().balance) + amt) * 100) / 100,
-        pendingClaim: tid
-      });
-    });
-    await ledgerAddTx(u.uid, "in", amt, "Входящий перевод");
+    const [inbox, prof] = [await val("users/" + u.uid + "/inbox/" + tid), await val("users/" + u.uid)];
+    if (!inbox || inbox.spent) return msg("Перевод уже забран");
+    const out = await val("users/" + inbox.fromUid + "/outbox/" + tid);
+    if (!out || out.claimed) return msg("Перевод уже забран");
+    const amt = Number(inbox.amount);
+    const up = {};
+    up["users/" + u.uid + "/balance"] = Math.round((Number(prof.balance) + amt) * 100) / 100;
+    up["users/" + u.uid + "/pendingClaim"] = tid;
+    up["users/" + u.uid + "/inbox/" + tid + "/spent"] = true;
+    up["users/" + inbox.fromUid + "/outbox/" + tid + "/claimed"] = true;
+    Object.assign(up, ledgerEntry(u.uid, "in", amt, "Входящий перевод"));
+    await R("/").update(up);
     render(); msg("", "Зачислено +" + fmt(amt) + " HUWY");
-  } catch (err) { msg(err && err.code === "gone" ? "Перевод уже забран" : fbErr(err)); }
+  } catch (err) { msg(fbErr(err)); }
+}
+async function renderOutbox() {
+  const u = me(); const box = $("#outboxList"); if (!u || !box) return;
+  const all = (await val("users/" + u.uid + "/outbox")) || {};
+  const list = Object.entries(all).filter(([, t]) => t && !t.claimed);
+  box.innerHTML = list.length ? list.map(([tid, t]) =>
+    '<div class="tx"><span>Ждёт получения · ' + t.toAddr +
+    '</span><span><b>' + fmt(t.amount) + '</b> <button class="btn ghost sm" data-cancel="' + tid + '">Отменить</button></span></div>'
+  ).join("") : "";
+  box.querySelectorAll("[data-cancel]").forEach((b) => (b.onclick = () => cancelTransfer(b.dataset.cancel)));
+}
+async function cancelTransfer(tid) {
+  msg("");
+  try {
+    const u = me();
+    const [out, prof] = [await val("users/" + u.uid + "/outbox/" + tid), await val("users/" + u.uid)];
+    if (!out || out.claimed) return msg("Перевод уже забран, отменить нельзя");
+    const amt = Number(out.amount);
+    const up = {};
+    up["users/" + u.uid + "/balance"] = Math.round((Number(prof.balance) + amt) * 100) / 100;
+    up["users/" + u.uid + "/pendingClaim"] = tid;
+    up["users/" + u.uid + "/outbox/" + tid] = null;
+    Object.assign(up, ledgerEntry(u.uid, "cancel", amt, "Возврат: перевод не забрали"));
+    await R("/").update(up);
+    render(); msg("", "Перевод отменён, +" + fmt(amt) + " HUWY возвращено");
+  } catch (err) { msg(fbErr(err)); }
 }
 
-/* ================= трейдинг (исход решает случай, максимум x2 — только игра) ================= */
+/* ================= трейдинг (x2, исход — случай; только игра) ================= */
 $("#tradeForm").onsubmit = async (e) => {
   e.preventDefault(); msg("");
   const amt = Math.floor(parseFloat(new FormData(e.target).get("amount")));
   if (!(amt >= 1)) return msg("Минимум 1 HUWY");
   try {
     const u = me(); if (!u) return msg("Войди снова");
-    const bid = db.collection("bets").doc().id;
-    await db.runTransaction(async (tx) => {
-      const sdoc = await tx.get(db.collection("users").doc(u.uid));
-      if (!sdoc.exists || Number(sdoc.data().balance) < amt) throw { code: "funds" };
-      tx.set(db.collection("bets").doc(bid), {
-        uid: u.uid, amount: amt, claimed: false,
-        t: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      tx.update(db.collection("users").doc(u.uid), { balance: Number(sdoc.data().balance) - amt });
-    });
-    await ledgerAddTx(u.uid, "trade", -amt, "Ставка");
+    const prof = await val("users/" + u.uid);
+    if (!prof || Number(prof.balance) < amt) return msg("Недостаточно средств");
+    const bid = R("users/" + u.uid + "/bets").push().key;
+    const up = {};
+    up["users/" + u.uid + "/balance"] = Number(prof.balance) - amt;
+    up["users/" + u.uid + "/bets/" + bid] = { amount: amt, claimed: false, t: TS };
+    Object.assign(up, ledgerEntry(u.uid, "trade", -amt, "Ставка"));
+    await R("/").update(up);
     render();
     const entry = price();
     $("#tradeStatus").textContent = "Позиция открыта: " + fmt(amt) + " HUWY @ " + entry.toFixed(4) + " ₽. Жди 15 сек...";
@@ -239,27 +245,23 @@ $("#tradeForm").onsubmit = async (e) => {
       const win = Math.random() < 0.5;
       try {
         if (win) {
-          await db.runTransaction(async (tx) => {
-            const bdoc = await tx.get(db.collection("bets").doc(bid));
-            if (!bdoc.exists || bdoc.data().claimed) throw { code: "gone" };
-            const udoc = await tx.get(db.collection("users").doc(u.uid));
-            tx.update(db.collection("bets").doc(bid), { claimed: true });
-            tx.update(db.collection("users").doc(u.uid), {
-              balance: Number(udoc.data().balance) + amt * 2,
-              pendingClaim: bid
-            });
-          });
-          await ledgerAddTx(u.uid, "trade", amt, "WIN x2");
+          const p2 = await val("users/" + u.uid);
+          const up2 = {};
+          up2["users/" + u.uid + "/balance"] = Number(p2.balance) + amt * 2;
+          up2["users/" + u.uid + "/pendingClaim"] = bid;
+          up2["users/" + u.uid + "/bets/" + bid + "/claimed"] = true;
+          Object.assign(up2, ledgerEntry(u.uid, "trade", amt, "WIN x2"));
+          await R("/").update(up2);
           $("#tradeStatus").textContent = "WIN! Выплата " + fmt(amt * 2) + " HUWY";
         } else {
-          await db.collection("bets").doc(bid).update({ claimed: true });
-          await ledgerAddTx(u.uid, "trade", 0, "LOSS, ставка сгорела");
+          await R("users/" + u.uid + "/bets/" + bid + "/claimed").set(true);
+          await R("/").update(ledgerEntry(u.uid, "trade", 0, "LOSS, ставка сгорела"));
           $("#tradeStatus").textContent = "LOSS. Ставка сгорела.";
         }
       } catch (err) { $("#tradeStatus").textContent = "Ошибка расчёта: " + fbErr(err); }
       render();
     }, CFG.TRADE_WAIT_MS);
-  } catch (err) { msg(err && err.code === "funds" ? "Недостаточно средств" : fbErr(err)); }
+  } catch (err) { msg(fbErr(err)); }
 };
 
 /* ================= сканер ================= */
@@ -283,7 +285,7 @@ $("#scanForm").onsubmit = (e) => {
   $("#sendForm").to.value = a; showView("send"); msg("", a ? "Адрес подставлен в перевод" : "");
 };
 
-/* ================= админ (только ADMIN_UID, права проверяют правила базы) ================= */
+/* ================= админ (только ADMIN_UID, проверяют правила базы) ================= */
 $("#adminForm").onsubmit = async (e) => {
   e.preventDefault(); msg("");
   if (!isAdmin()) return msg("Нет прав");
@@ -292,17 +294,15 @@ $("#adminForm").onsubmit = async (e) => {
   if (!validAddr(address)) return msg("Неверный формат адреса");
   if (!(amt > 0) || amt > 1000000) return msg("Сумма 0..1000000");
   try {
-    const rc = await db.collection("addresses").doc(address).get();
-    if (!rc.exists) return msg("Адрес не найден");
-    await db.runTransaction(async (tx) => {
-      const udoc = await tx.get(db.collection("users").doc(rc.data().uid));
-      tx.update(db.collection("users").doc(rc.data().uid), {
-        balance: Math.round((Number(udoc.data().balance) + amt) * 100) / 100
-      });
-      ledgerAdd(tx, rc.data().uid, "admin", Math.round(amt * 100) / 100, "Выдача админом");
-    });
+    const rc = await val("addresses/" + address);
+    if (!rc) return msg("Адрес не найден");
+    const p = await val("users/" + rc.uid);
+    const up = {};
+    up["users/" + rc.uid + "/balance"] = Math.round((Number(p.balance) + amt) * 100) / 100;
+    Object.assign(up, ledgerEntry(rc.uid, "admin", Math.round(amt * 100) / 100, "Выдача админом"));
+    await R("/").update(up);
     render(); e.target.reset();
-    msg("", "Выдано " + fmt(amt) + " HUWY → " + rc.data().login);
+    msg("", "Выдано " + fmt(amt) + " HUWY → " + rc.login);
   } catch (err) { msg(fbErr(err)); }
 };
 
@@ -325,7 +325,7 @@ function drawChart() {
   c.clearRect(0, 0, W, H);
   c.strokeStyle = "#26314a"; c.fillStyle = "#93a0bb"; c.font = "11px monospace";
   for (let g = 0; g < 4; g++) {
-    const y = 10 + (g * (H - 20)) / 3;
+    const y = 10 + (g * (H - 20)) / 3);
     c.beginPath(); c.moveTo(40, y); c.lineTo(W - 6, y); c.stroke();
     c.fillText((mx - (rg * g) / 3).toFixed(4), 2, y + 3);
   }
@@ -361,15 +361,22 @@ function renderRate() {
   const el = $("#tvChg");
   el.textContent = (ch >= 0 ? "+" : "") + ch.toFixed(2) + "%";
   el.style.color = ch >= 0 ? "#6ee7a8" : "#ff7a7a";
-  const dr = $("#depRate"); if (dr) dr.textContent = "1 ₽ = " + CFG.RATE + " HUWY";
+}
+function txRow(kind, note, t, amt) {
+  return '<div class="tx"><span>' + kind + " · " + (note || "") +
+    "<br><small>" + (t ? new Date(t).toLocaleString("ru-RU") : "") + "</small></span><b style=\"color:" +
+    (amt >= 0 ? "#6ee7a8" : "#ff7a7a") + "\">" + (amt >= 0 ? "+" : "") + fmt(amt) + "</b></div>";
 }
 async function renderHist() {
-  const list = await getHist();
-  $("#histList").innerHTML = list.length ? list.map((t) =>
-    '<div class="tx"><span>' + t.kind + " · " + (t.note || "") +
-    "<br><small>" + (t.t ? new Date(t.t).toLocaleString("ru-RU") : "") + "</small></span><b style=\"color:" +
-    (t.amt >= 0 ? "#6ee7a8" : "#ff7a7a") + "\">" + (t.amt >= 0 ? "+" : "") + fmt(t.amt) + "</b></div>"
-  ).join("") : "<p class='muted'>Пока пусто</p>";
+  try {
+    const u = me(); if (!u) return;
+    const [led, out] = [await val("ledger/" + u.uid), await val("users/" + u.uid + "/outbox")];
+    const list = [];
+    if (led) Object.values(led).forEach((t) => list.push({ t: t.t || 0, k: t.kind, n: t.note, a: Number(t.amt) }));
+    if (out) Object.values(out).forEach((t) => { if (t && !t.claimed) list.push({ t: t.t || 0, k: "out", n: "Ожидает получения · " + t.toAddr, a: 0 }); });
+    list.sort((a, b) => b.t - a.t);
+    $("#histList").innerHTML = list.length ? list.slice(0, 100).map((t) => txRow(t.k, t.n, t.t, t.a)).join("") : "<p class='muted'>Пока пусто</p>";
+  } catch (err) { $("#histList").innerHTML = "<p class='err'>" + fbErr(err) + "</p>"; }
 }
 async function render() {
   const u = me();
@@ -380,7 +387,6 @@ async function render() {
   try {
     p = await getProfile();
     if (!p) {
-      // залогинен, а профиля нет (сбойная регистрация): чиним на месте
       const login = (u.email || "").split("@")[0];
       const st = await ensureProfile(u.uid, login);
       if (st === "taken") { await auth.signOut(); authErr("Логин занят другим аккаунтом. Войди под своим."); render(); return; }
@@ -397,7 +403,7 @@ async function render() {
   $("#userAddr").textContent = p.address;
   drawQR(p.address);
   document.querySelector('[data-view="admin"]').style.display = isAdmin() ? "" : "none";
-  renderRate(); drawChart(); renderHist(); renderIncoming(); msg("");
+  renderRate(); drawChart(); renderHist(); renderIncoming(); renderOutbox(); msg("");
 }
 auth.onAuthStateChanged(() => render());
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));

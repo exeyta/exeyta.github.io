@@ -19,7 +19,7 @@
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js" defer></script>
   <script src="./assets/js/config.js" defer></script>
   <script src="./assets/js/app.js" defer></script>
 </head>
@@ -135,6 +135,8 @@
         <div class="view hidden" id="view-hist">
           <p class="eyebrow">Входящие — нажми «Забрать», чтобы зачислить</p>
           <div id="incomingList"></div>
+          <p class="eyebrow" style="margin-top:12px">Мои отправленные (можно отменить, пока не забрали)</p>
+          <div id="outboxList"></div>
           <p class="eyebrow" style="margin-top:12px">История</p>
           <div id="histList"></div>
         </div>
