@@ -14,10 +14,12 @@
   <title>Huwy Wallet — игровой кошелёк</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="./assets/css/style.css" />
-  <!-- Библиотеки с CDN (не фреймворки, сборки не требуют): QR + сканер камеры + Supabase -->
+  <!-- Библиотеки с CDN (не фреймворки, сборки не требуют): QR + сканер + Firebase -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" defer></script>
   <script src="./assets/js/config.js" defer></script>
   <script src="./assets/js/app.js" defer></script>
 </head>
@@ -33,7 +35,7 @@
   <header class="top">
     <div class="brand">Huwy <span>Wallet</span></div>
     <div class="rate" id="ratePill">1 ₽ = 10 HUWY</div>
-    <div class="rate" id="modeBadge">сервер</div>
+    <div class="rate" id="modeBadge">Firebase</div>
     <button class="btn ghost sm" id="installBtn" style="width:auto;margin:0">Установить</button>
   </header>
 
@@ -56,7 +58,7 @@
         <button class="btn" type="submit">Создать кошелёк</button>
       </form>
       <p class="err" id="authErr" hidden></p>
-      <p class="hint">Аккаунты и балансы хранятся на сервере. Пароли знает только сервер.</p>
+      <p class="hint">Только логин и пароль. Аккаунты и балансы хранятся в Firebase.</p>
     </section>
 
     <section id="dashView" class="hidden">
@@ -81,7 +83,6 @@
       <div class="card">
         <div class="seg">
           <button type="button" class="seg-btn active" data-view="send">Отправить</button>
-          <button type="button" class="seg-btn" data-view="deposit">Пополнить</button>
           <button type="button" class="seg-btn" data-view="trade">Трейдинг</button>
           <button type="button" class="seg-btn" data-view="scan">Сканер</button>
           <button type="button" class="seg-btn" data-view="admin">Админ</button>
@@ -97,22 +98,9 @@
           </form>
         </div>
 
-        <div class="view hidden" id="view-deposit">
-          <p class="muted">Оплата через <b id="depMethod">ЮMoney</b>. Курс: <b id="depRate"></b></p>
-          <form id="depForm">
-            <label>Сумма, ₽<input name="rub" type="number" min="10" max="15000" value="100" required /></label>
-            <div id="ymTypes">
-              <label><input type="radio" name="ptype" value="PC" checked style="width:auto;display:inline" /> Кошелёк ЮMoney</label>
-              <label><input type="radio" name="ptype" value="AC" style="width:auto;display:inline" /> Банковская карта (−3% к зачислению)</label>
-            </div>
-            <p class="hint" id="depPrev"></p>
-            <button class="btn" type="submit" id="depBtn">Оплатить через ЮMoney</button>
-          </form>
-          <p class="hint">После оплаты HUWY начислятся автоматически (обычно до минуты). Никому не сообщай пароль от почты и кошелька.</p>
-        </div>
-
         <div class="view hidden" id="view-trade">
           <p class="eyebrow">HUWY/RUB · <span id="tvPrice">—</span> · <span id="tvChg">0.00%</span></p>
+          <p class="muted">Ставка на 15 секунд. Выигрыш — x2. Исход решает случай (игра, не заработок).</p>
           <div>
             <button type="button" class="btn ghost sm" data-tf="1">1m</button>
             <button type="button" class="btn ghost sm" data-tf="5">5m</button>
@@ -136,9 +124,8 @@
         </div>
 
         <div class="view hidden" id="view-admin">
-          <p class="eyebrow">Админ · выдача HUWY</p>
+          <p class="eyebrow">Админ · выдача HUWY (видно только админу)</p>
           <form id="adminForm">
-            <label>Админ-пароль<input name="pass" type="password" required autocomplete="current-password" /></label>
             <label>Адрес кошелька<input name="address" placeholder="HUWY-XXXX-XXXX-XXXXXXXX" required /></label>
             <label>Сумма HUWY<input name="amount" type="number" min="0.01" step="0.01" required /></label>
             <button class="btn" type="submit">Выдать HUWY</button>
@@ -146,6 +133,9 @@
         </div>
 
         <div class="view hidden" id="view-hist">
+          <p class="eyebrow">Входящие — нажми «Забрать», чтобы зачислить</p>
+          <div id="incomingList"></div>
+          <p class="eyebrow" style="margin-top:12px">История</p>
           <div id="histList"></div>
         </div>
 
@@ -154,7 +144,7 @@
       </div>
       <button class="btn ghost" id="logoutBtn" type="button">Выйти</button>
     </section>
-    <footer>Huwy Wallet · сервер Supabase + оплата ЮMoney</footer>
+    <footer>Huwy Wallet · Firebase (Auth + Firestore)</footer>
   </main>
 </body>
 </html>

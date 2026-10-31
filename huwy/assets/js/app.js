@@ -1,17 +1,23 @@
 "use strict";
-/* Huwy Wallet — серверный режим: Supabase (аккаунты, балансы) + ЮMoney (оплата).
-   HTML+CSS+JS, библиотеки только с CDN. Без Node.js, без сборки, без демо-режима. */
+/* Huwy Wallet на Firebase (Auth + Firestore). Только логин + пароль.
+   Email провайдер Firebase использует технический логин@huwy.local — юзер его не видит.
+   P2P — эскроу: отправитель списывает и создаёт перевод, получатель забирает.
+   Правила firestore.rules запрещают любую другую накрутку баланса. */
 const CFG = window.HUWY_CONFIG;
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 const norm = (s) => (s || "").trim();
 const fmt = (n) => (Math.round(n * 100) / 100).toLocaleString("ru-RU");
 
-const READY = !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY &&
-  CFG.SUPABASE_URL.startsWith("http") && window.supabase);
-const sb = READY ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
-
+firebase.initializeApp(CFG.FIREBASE);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const FAKE_MAIL = (login) => login.toLowerCase() + "@huwy.local";
 const validAddr = (a) => /^HUWY-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{8}$/.test(a);
+function randAddr() {
+  const h = "0123456789ABCDEF", p = (n) => Array.from({ length: n }, () => h[(Math.random() * 16) | 0]).join("");
+  return "HUWY-" + p(4) + "-" + p(4) + "-" + p(8);
+}
 
 /* ================= цена (индикатор для графика) ================= */
 function genPrice(seed) {
@@ -37,31 +43,38 @@ function msg(err, ok) {
   if (ok) o.textContent = ok;
 }
 function authErr(t) { const e = $("#authErr"); e.hidden = !t; if (t) e.textContent = t; }
-function rpcErr(e) {
-  const m = (e && e.message) || "";
-  if (m.includes("login_taken")) return "Такой логин уже занят";
-  if (m.includes("funds")) return "Недостаточно средств";
-  if (m.includes("no_rcpt")) return "Получатель не найден";
-  if (m.includes("bad_amount")) return "Неверная сумма";
-  if (m.includes("rate")) return "Слишком часто. Подожди немного";
-  if (m.includes("self")) return "Нельзя отправить самому себе";
-  if (m.includes("denied")) return "Неверный админ-пароль";
-  if (m.includes("locked")) return "Админка временно заблокирована (перебор)";
-  if (m.includes("auth")) return "Войди снова";
-  return "Ошибка сервера. Попробуй позже";
+function fbErr(e) {
+  const c = (e && e.code) || "";
+  if (c.includes("email-already-in-use")) return "Такой логин уже занят";
+  if (c.includes("wrong-password") || c.includes("invalid-credential") || c.includes("user-not-found")) return "Неверный логин или пароль";
+  if (c.includes("permission-denied") || c.includes("failed-precondition")) return "Отклонено правилами базы. Обнови страницу и попробуй снова";
+  if (c.includes("unavailable") || c.includes("network")) return "Нет связи с сервером. Проверь интернет";
+  return "Ошибка. Попробуй позже";
 }
+const me = () => auth.currentUser;
+const isAdmin = () => !!(CFG.ADMIN_UID && me() && me().uid === CFG.ADMIN_UID);
 
-async function getMe() {
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) return null;
-  const { data, error } = await sb.from("huwy_profiles").select("*").eq("user_id", user.id).single();
-  if (error) return null;
-  return { login: data.login, address: data.address, bal: Number(data.balance), email: data.email, uid: user.id };
+async function getProfile() {
+  const u = me(); if (!u) return null;
+  const d = await db.collection("users").doc(u.uid).get();
+  if (!d.exists) return null;
+  const p = d.data();
+  return { login: p.login, address: p.address, bal: Number(p.balance), uid: u.uid };
+}
+async function ledgerAdd(tx, uid, kind, amt, note) {
+  tx.set(db.collection("ledger").doc(uid).collection("items").doc(),
+    { uid, kind, amt, note: String(note || "").slice(0, 140), t: firebase.firestore.FieldValue.serverTimestamp() });
 }
 async function getHist() {
-  const me = await getMe(); if (!me) return [];
-  const { data } = await sb.from("huwy_tx").select("*").eq("user_id", me.uid).order("t", { ascending: false }).limit(100);
-  return (data || []).map((t) => ({ kind: t.kind, amt: Number(t.amt), note: t.note, t: new Date(t.t).getTime() }));
+  const u = me(); if (!u) return [];
+  const out = [];
+  const s1 = await db.collection("transfers").where("fromUid", "==", u.uid).get();
+  s1.forEach((d) => { const t = d.data(); out.push({ t: t.t ? t.t.toMillis() : 0, kind: "out", amt: -t.amount, note: (t.memo ? t.memo + " · " : "") + t.toAddr }); });
+  const s2 = await db.collection("transfers").where("toUid", "==", u.uid).get();
+  s2.forEach((d) => { const t = d.data(); out.push({ t: t.t ? t.t.toMillis() : 0, kind: "in", amt: t.amount, note: "от " + t.fromLogin + (t.memo ? " · " + t.memo : "") }); });
+  const s3 = await db.collection("ledger").doc(u.uid).collection("items").get();
+  s3.forEach((d) => { const t = d.data(); out.push({ t: t.t ? t.t.toMillis() : 0, kind: t.kind, amt: Number(t.amt), note: t.note }); });
+  return out.sort((a, b) => b.t - a.t).slice(0, 100);
 }
 
 /* ================= вкладки ================= */
@@ -79,89 +92,162 @@ function showView(name) {
   if (name === "scan") initScanner(); else stopScanner();
 }
 
-/* ================= регистрация / вход ================= */
-/* Входа по email нет: только логин + пароль. Supabase Auth внутри использует
-   технический email вида логин@huwy.local — пользователь его не видит.
-   Поэтому Confirm email в Dashboard должен быть ВЫКЛЮЧЕН. */
-const FAKE_MAIL = (login) => login.toLowerCase() + "@huwy.local";
-
+/* ================= регистрация / вход (только логин + пароль) ================= */
 $("#registerForm").onsubmit = async (e) => {
   e.preventDefault(); authErr("");
-  if (!READY) return authErr("Нет связи с сервером: вставь SUPABASE_ANON_KEY в assets/js/config.js.");
   const f = new FormData(e.target);
   const login = norm(f.get("login")).toLowerCase(), pw = f.get("password");
   if (login.length < 3) return authErr("Логин минимум 3 символа");
-  if (!/^[a-zA-Z0-9_а-яА-ЯёЁ-]{3,24}$/.test(login)) return authErr("Только буквы, цифры, _ и -");
+  if (!/^[a-z0-9_а-яё-]{3,24}$/.test(login)) return authErr("Только буквы, цифры, _ и -");
   if (pw.length < 6) return authErr("Пароль минимум 6 символов");
-  const { data, error } = await sb.auth.signUp({ email: FAKE_MAIL(login), password: pw, options: { data: { login } } });
-  if (error) return authErr(rpcErr(error));
-  if (!data.session) return authErr("Аккаунт создан, но вход не выполнен: выключи Confirm email в Dashboard (Authentication) и войди.");
-  render();
+  try {
+    if ((await db.collection("logins").doc(login).get()).exists) return authErr("Такой логин уже занят");
+    const cred = await auth.createUserWithEmailAndPassword(FAKE_MAIL(login), pw);
+    const uid = cred.user.uid;
+    let address = randAddr();
+    for (let i = 0; i < 5; i++) {
+      if (!(await db.collection("addresses").doc(address).get()).exists) break;
+      address = randAddr();
+    }
+    await db.runTransaction(async (tx) => {
+      tx.set(db.collection("users").doc(uid), {
+        login, address, balance: CFG.START_BONUS, pendingClaim: "",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      tx.set(db.collection("logins").doc(login), { uid });
+      tx.set(db.collection("addresses").doc(address), { uid, login });
+    });
+    await ledgerAddTx(uid, "bonus", CFG.START_BONUS, "Стартовый бонус");
+    render();
+  } catch (err) { authErr(fbErr(err)); }
 };
+async function ledgerAddTx(uid, kind, amt, note) {
+  await db.collection("ledger").doc(uid).collection("items").add(
+    { uid, kind, amt, note: String(note || "").slice(0, 140), t: firebase.firestore.FieldValue.serverTimestamp() });
+}
 $("#loginForm").onsubmit = async (e) => {
   e.preventDefault(); authErr("");
-  if (!READY) return authErr("Нет связи с сервером: вставь SUPABASE_ANON_KEY в assets/js/config.js.");
   const f = new FormData(e.target);
   const login = norm(f.get("login")).toLowerCase(), pw = f.get("password");
-  const { error } = await sb.auth.signInWithPassword({ email: FAKE_MAIL(login), password: pw });
-  if (error) return authErr("Неверный логин или пароль");
-  const me = await getMe();
-  if (!me) return authErr("Профиль ещё создаётся, подожди 5 секунд и войди снова");
-  render();
+  try {
+    await auth.signInWithEmailAndPassword(FAKE_MAIL(login), pw);
+    render();
+  } catch (err) { authErr(fbErr(err)); }
 };
-$("#logoutBtn").onclick = async () => { stopScanner(); await sb.auth.signOut(); render(); };
+$("#logoutBtn").onclick = async () => { stopScanner(); await auth.signOut(); render(); };
 
-/* ================= перевод ================= */
+/* ================= перевод (эскроу) ================= */
 $("#sendForm").onsubmit = async (e) => {
   e.preventDefault(); msg("");
   const f = new FormData(e.target);
-  const to = norm(f.get("to")).toUpperCase(), amt = parseFloat(f.get("amount")), memo = norm(f.get("memo"));
+  const to = norm(f.get("to")).toUpperCase(), amt = Math.round(parseFloat(f.get("amount")) * 100) / 100, memo = norm(f.get("memo"));
   if (!validAddr(to)) return msg("Неверный формат адреса");
   if (!(amt > 0)) return msg("Сумма должна быть > 0");
-  const { data, error } = await sb.rpc("huwy_transfer", { p_to: to, p_amt: amt, p_memo: memo });
-  if (error) return msg(rpcErr(error));
-  render(); e.target.reset();
-  msg("", "Отправлено " + fmt(amt) + " HUWY → " + data);
+  if (amt > 1000000) return msg("Слишком большая сумма");
+  try {
+    const u = me(); if (!u) return msg("Войди снова");
+    const rc = await db.collection("addresses").doc(to).get();
+    if (!rc.exists) return msg("Получатель не найден");
+    if (rc.data().uid === u.uid) return msg("Нельзя отправить самому себе");
+    await db.runTransaction(async (tx) => {
+      const sdoc = await tx.get(db.collection("users").doc(u.uid));
+      if (!sdoc.exists) throw { code: "no-profile" };
+      if (Number(sdoc.data().balance) < amt) throw { code: "funds" };
+      const tid = db.collection("transfers").doc().id;
+      tx.set(db.collection("transfers").doc(tid), {
+        fromUid: u.uid, fromLogin: sdoc.data().login,
+        toUid: rc.data().uid, toAddr: to, amount: amt,
+        memo: memo.slice(0, 120), claimed: false,
+        t: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      tx.update(db.collection("users").doc(u.uid), { balance: Number(sdoc.data().balance) - amt });
+    });
+    await ledgerAddTx(u.uid, "out", -amt, (memo ? memo + " · " : "") + to);
+    render(); e.target.reset();
+    msg("", "Отправлено " + fmt(amt) + " HUWY → " + rc.data().login + ". Получатель заберёт во вкладке «История» или перевод появится у него сам.");
+  } catch (err) {
+    if (err && err.code === "funds") return msg("Недостаточно средств");
+    msg(fbErr(err));
+  }
 };
 
-/* ================= пополнение через ЮMoney ================= */
-function depCalc() {
-  const v = parseFloat(new FormData($("#depForm")).get("rub")) || 0;
-  $("#depPrev").textContent = "Будет начислено ≈ " + fmt(v * CFG.RATE) + " HUWY";
+/* ================= входящие: забрать ================= */
+async function renderIncoming() {
+  const u = me(); const box = $("#incomingList"); if (!u || !box) return;
+  const s = await db.collection("transfers").where("toUid", "==", u.uid).get();
+  const list = [];
+  s.forEach((d) => { if (!d.data().claimed) list.push({ id: d.id, ...d.data() }); });
+  box.innerHTML = list.length ? list.map((t) =>
+    '<div class="tx"><span>Входящий · от ' + t.fromLogin + (t.memo ? " · " + t.memo : "") +
+    '</span><span><b>+' + fmt(t.amount) + '</b> <button class="btn ghost sm" data-claim="' + t.id + '" data-amt="' + t.amount + '">Забрать</button></span></div>'
+  ).join("") : "<p class='muted'>Входящих нет</p>";
+  box.querySelectorAll("[data-claim]").forEach((b) => (b.onclick = () => claimTransfer(b.dataset.claim, parseFloat(b.dataset.amt))));
 }
-$("#depForm").rub.addEventListener("input", depCalc);
-$("#depForm").onsubmit = async (e) => {
-  e.preventDefault(); msg("");
-  const rub = Math.min(15000, Math.max(10, parseFloat(new FormData(e.target).get("rub")) || 0));
-  if (!(rub >= 10)) return msg("Минимум 10 ₽");
-  const me = await getMe();
-  if (!me) return msg("Войди снова");
-  const ptype = (new FormData(e.target).get("ptype")) || "PC";
-  const successURL = location.origin + location.pathname + "?pay=success";
-  const q = new URLSearchParams({
-    receiver: CFG.YOOMONEY_WALLET, "quickpay-form": "button",
-    targets: "Huwy Wallet: пополнение " + rub + " RUB",
-    paymentType: String(ptype), sum: String(rub),
-    label: me.address, successURL
-  });
-  location.href = "https://yoomoney.ru/quickpay/confirm.xml?" + q.toString();
-};
+async function claimTransfer(tid, amt) {
+  msg("");
+  try {
+    const u = me();
+    await db.runTransaction(async (tx) => {
+      const tdoc = await tx.get(db.collection("transfers").doc(tid));
+      if (!tdoc.exists || tdoc.data().claimed || tdoc.data().toUid !== u.uid) throw { code: "gone" };
+      const udoc = await tx.get(db.collection("users").doc(u.uid));
+      tx.update(db.collection("transfers").doc(tid), { claimed: true });
+      tx.update(db.collection("users").doc(u.uid), {
+        balance: Math.round((Number(udoc.data().balance) + amt) * 100) / 100,
+        pendingClaim: tid
+      });
+    });
+    await ledgerAddTx(u.uid, "in", amt, "Входящий перевод");
+    render(); msg("", "Зачислено +" + fmt(amt) + " HUWY");
+  } catch (err) { msg(err && err.code === "gone" ? "Перевод уже забран" : fbErr(err)); }
+}
 
-/* ================= трейдинг (исход решает сервер) ================= */
+/* ================= трейдинг (исход решает случай, максимум x2 — только игра) ================= */
 $("#tradeForm").onsubmit = async (e) => {
   e.preventDefault(); msg("");
   const amt = Math.floor(parseFloat(new FormData(e.target).get("amount")));
   if (!(amt >= 1)) return msg("Минимум 1 HUWY");
-  const entry = price();
-  $("#tradeStatus").textContent = "Позиция открыта: " + fmt(amt) + " HUWY @ " + entry.toFixed(4) + " ₽. Жди 15 сек...";
-  setTimeout(async () => {
-    const { data, error } = await sb.rpc("huwy_trade", { p_amt: amt });
-    if (error) { render(); return msg(rpcErr(error)); }
-    $("#tradeStatus").textContent = data.win
-      ? "WIN! Выплата " + fmt(Number(data.payout)) + " HUWY"
-      : "LOSS. Ставка сгорела.";
+  try {
+    const u = me(); if (!u) return msg("Войди снова");
+    const bid = db.collection("bets").doc().id;
+    await db.runTransaction(async (tx) => {
+      const sdoc = await tx.get(db.collection("users").doc(u.uid));
+      if (!sdoc.exists || Number(sdoc.data().balance) < amt) throw { code: "funds" };
+      tx.set(db.collection("bets").doc(bid), {
+        uid: u.uid, amount: amt, claimed: false,
+        t: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      tx.update(db.collection("users").doc(u.uid), { balance: Number(sdoc.data().balance) - amt });
+    });
+    await ledgerAddTx(u.uid, "trade", -amt, "Ставка");
     render();
-  }, CFG.TRADE_WAIT_MS);
+    const entry = price();
+    $("#tradeStatus").textContent = "Позиция открыта: " + fmt(amt) + " HUWY @ " + entry.toFixed(4) + " ₽. Жди 15 сек...";
+    setTimeout(async () => {
+      const win = Math.random() < 0.5;
+      try {
+        if (win) {
+          await db.runTransaction(async (tx) => {
+            const bdoc = await tx.get(db.collection("bets").doc(bid));
+            if (!bdoc.exists || bdoc.data().claimed) throw { code: "gone" };
+            const udoc = await tx.get(db.collection("users").doc(u.uid));
+            tx.update(db.collection("bets").doc(bid), { claimed: true });
+            tx.update(db.collection("users").doc(u.uid), {
+              balance: Number(udoc.data().balance) + amt * 2,
+              pendingClaim: bid
+            });
+          });
+          await ledgerAddTx(u.uid, "trade", amt, "WIN x2");
+          $("#tradeStatus").textContent = "WIN! Выплата " + fmt(amt * 2) + " HUWY";
+        } else {
+          await db.collection("bets").doc(bid).update({ claimed: true });
+          await ledgerAddTx(u.uid, "trade", 0, "LOSS, ставка сгорела");
+          $("#tradeStatus").textContent = "LOSS. Ставка сгорела.";
+        }
+      } catch (err) { $("#tradeStatus").textContent = "Ошибка расчёта: " + fbErr(err); }
+      render();
+    }, CFG.TRADE_WAIT_MS);
+  } catch (err) { msg(err && err.code === "funds" ? "Недостаточно средств" : fbErr(err)); }
 };
 
 /* ================= сканер ================= */
@@ -185,16 +271,27 @@ $("#scanForm").onsubmit = (e) => {
   $("#sendForm").to.value = a; showView("send"); msg("", a ? "Адрес подставлен в перевод" : "");
 };
 
-/* ================= админ (пароль проверяет сервер) ================= */
+/* ================= админ (только ADMIN_UID, права проверяют правила базы) ================= */
 $("#adminForm").onsubmit = async (e) => {
   e.preventDefault(); msg("");
+  if (!isAdmin()) return msg("Нет прав");
   const f = new FormData(e.target);
-  const address = norm(f.get("address")).toUpperCase(), amt = parseFloat(f.get("amount")), pass = f.get("pass");
-  if (!(amt > 0)) return msg("Сумма > 0");
-  const { data, error } = await sb.rpc("huwy_admin_issue", { p_address: address, p_amt: amt, p_pass: pass });
-  e.target.pass.value = ""; // не держать пароль в DOM
-  if (error) return msg(rpcErr(error));
-  render(); msg("", "Выдано " + fmt(amt) + " HUWY → " + data);
+  const address = norm(f.get("address")).toUpperCase(), amt = parseFloat(f.get("amount"));
+  if (!validAddr(address)) return msg("Неверный формат адреса");
+  if (!(amt > 0) || amt > 1000000) return msg("Сумма 0..1000000");
+  try {
+    const rc = await db.collection("addresses").doc(address).get();
+    if (!rc.exists) return msg("Адрес не найден");
+    await db.runTransaction(async (tx) => {
+      const udoc = await tx.get(db.collection("users").doc(rc.data().uid));
+      tx.update(db.collection("users").doc(rc.data().uid), {
+        balance: Math.round((Number(udoc.data().balance) + amt) * 100) / 100
+      });
+      ledgerAdd(tx, rc.data().uid, "admin", Math.round(amt * 100) / 100, "Выдача админом");
+    });
+    render(); e.target.reset();
+    msg("", "Выдано " + fmt(amt) + " HUWY → " + rc.data().login);
+  } catch (err) { msg(fbErr(err)); }
 };
 
 /* ================= QR / график / прочее ================= */
@@ -258,53 +355,25 @@ async function renderHist() {
   const list = await getHist();
   $("#histList").innerHTML = list.length ? list.map((t) =>
     '<div class="tx"><span>' + t.kind + " · " + (t.note || "") +
-    "<br><small>" + new Date(t.t).toLocaleString("ru-RU") + "</small></span><b style=\"color:" +
+    "<br><small>" + (t.t ? new Date(t.t).toLocaleString("ru-RU") : "") + "</small></span><b style=\"color:" +
     (t.amt >= 0 ? "#6ee7a8" : "#ff7a7a") + "\">" + (t.amt >= 0 ? "+" : "") + fmt(t.amt) + "</b></div>"
   ).join("") : "<p class='muted'>Пока пусто</p>";
 }
 async function render() {
-  const u = await getMe();
+  const u = me();
   $("#authView").classList.toggle("hidden", !!u);
   $("#dashView").classList.toggle("hidden", !u);
   if (!u) return;
-  $("#balHuwy").textContent = fmt(u.bal) + " HUWY";
-  $("#balRub").textContent = "≈ " + fmt(u.bal * price()) + " ₽";
-  $("#userLogin").textContent = u.login;
-  $("#userAddr").textContent = u.address;
-  drawQR(u.address);
-  renderRate(); drawChart(); depCalc(); renderHist(); msg("");
+  const p = await getProfile();
+  if (!p) { authErr("Профиль не найден. Зарегистрируйся заново."); await auth.signOut(); render(); return; }
+  $("#balHuwy").textContent = fmt(p.bal) + " HUWY";
+  $("#balRub").textContent = "≈ " + fmt(p.bal * price()) + " ₽";
+  $("#userLogin").textContent = p.login;
+  $("#userAddr").textContent = p.address;
+  drawQR(p.address);
+  document.querySelector('[data-view="admin"]').style.display = isAdmin() ? "" : "none";
+  renderRate(); drawChart(); renderHist(); renderIncoming(); msg("");
 }
-async function boot() {
-  if (!READY) {
-    authErr("Нет связи с сервером: вставь SUPABASE_URL и SUPABASE_ANON_KEY в assets/js/config.js (Dashboard → Settings → API).");
-    return;
-  }
-  try {
-    const { data } = await sb.rpc("huwy_public_config");
-    if (data && data.rate) CFG.RATE = Number(data.rate);
-    if (data && data.start_bonus) CFG.START_BONUS = Number(data.start_bonus);
-  } catch {}
-  $("#modeBadge").textContent = "сервер · Supabase";
-  $("#depMethod").textContent = "ЮMoney (" + CFG.YOOMONEY_WALLET + ")";
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
-  render();
-  // возврат с ЮMoney после оплаты: ждём уведомление и обновляем баланс
-  if (new URLSearchParams(location.search).get("pay") === "success") {
-    history.replaceState(null, "", location.pathname);
-    const me = await getMe();
-    if (me) {
-      showView("deposit");
-      msg("", "ЮMoney принял платёж. HUWY начислятся автоматически, как только придёт уведомление (обычно до минуты).");
-      const b0 = me.bal; let n = 0;
-      const timer = setInterval(async () => {
-        n++;
-        const m2 = await getMe();
-        if ((m2 && m2.bal !== b0) || n >= 24) {
-          clearInterval(timer); render();
-          if (m2 && m2.bal !== b0) msg("", "HUWY начислены: +" + fmt(m2.bal - b0));
-        }
-      }, 5000);
-    }
-  }
-}
-boot();
+auth.onAuthStateChanged(() => render());
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+render();
