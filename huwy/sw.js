@@ -1,7 +1,7 @@
 /* Huwy Wallet — офлайн-кэш. Без сборки. */
-const CACHE = "huwy-v5";
+const CACHE = "huwy-v6";
 const FILES = ["./", "./index.html", "./manifest.webmanifest",
-  "./assets/css/style.css?v=5", "./assets/js/config.js?v=5", "./assets/js/app.js?v=5"];
+  "./assets/css/style.css?v=6", "./assets/js/config.js?v=6", "./assets/js/app.js?v=6"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
 });

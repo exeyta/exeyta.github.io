@@ -71,17 +71,27 @@ function ledgerEntry(uid, kind, amt, note) {
   u["ledger/" + uid + "/" + k] = { uid, kind, amt, note: String(note || "").slice(0, 140), t: TS };
   return u;
 }
-/* создание профиля (идемпотентно) */
+/* создание профиля (идемпотентно): занимает свободный логин,
+   достраивает свой незавершённый, забирает бесхозный (владелец удалён) */
 async function ensureProfile(uid, login) {
   if (await val("users/" + uid)) return "ok";
-  if (await val("logins/" + login)) return "taken";
+  await R("logins/" + login).transaction((cur) => (cur ? undefined : { uid })).catch(() => {});
+  let doc = await val("logins/" + login);
+  if (doc && doc.uid !== uid) {
+    const owner = await val("users/" + doc.uid);
+    if (owner) return "taken"; // живой чужой аккаунт
+    const stale = doc.uid; // владелец удалён — забираем бесхозный логин
+    await R("logins/" + login).transaction((cur) =>
+      (cur && cur.uid === stale) ? { uid } : undefined).catch(() => {});
+    doc = await val("logins/" + login);
+    if (!doc || doc.uid !== uid) return "taken";
+  }
+  if (!doc || doc.uid !== uid) return "retry";
   let address = randAddr();
   for (let i = 0; i < 5; i++) {
     if (!(await val("addresses/" + address))) break;
     address = randAddr();
   }
-  await R("logins/" + login).transaction((cur) => (cur ? undefined : { uid }));
-  if ((await val("logins/" + login))?.uid !== uid) return "taken";
   const u = {};
   u["users/" + uid] = { login, address, balance: CFG.START_BONUS, pendingClaim: "", createdAt: TS };
   u["addresses/" + address] = { uid, login };
@@ -118,6 +128,7 @@ $("#registerForm").onsubmit = async (e) => {
     const cred = await auth.createUserWithEmailAndPassword(FAKE_MAIL(login), pw);
     const st = await ensureProfile(cred.user.uid, login);
     if (st === "taken") { await cred.user.delete().catch(() => {}); await auth.signOut(); return authErr("Такой логин уже занят"); }
+    if (st !== "ok") { await cred.user.delete().catch(() => {}); await auth.signOut(); return authErr("Не получилось создать профиль, попробуй ещё раз"); }
     render();
   } catch (err) { authErr(fbErr(err)); }
 };
@@ -384,6 +395,7 @@ async function render() {
       const login = (u.email || "").split("@")[0];
       const st = await ensureProfile(u.uid, login);
       if (st === "taken") { await auth.signOut(); authErr("Логин занят другим аккаунтом. Войди под своим."); render(); return; }
+      if (st !== "ok") { await auth.signOut(); authErr("Не получилось восстановить профиль, попробуй ещё раз."); render(); return; }
       p = await getProfile();
     }
   } catch (err) {
