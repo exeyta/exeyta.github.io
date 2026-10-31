@@ -60,3 +60,25 @@ footer{color:var(--mut);font-size:12px;text-align:center;padding:20px}
 .install-banner{display:flex;gap:10px;align-items:center;background:#101d16;
   border:1px solid #234d38;padding:10px 14px}
 .install-banner.hidden{display:none}
+
+/* ===== мобильная адаптация ===== */
+.btn{min-height:46px}
+input{font-size:16px} /* без зума на iOS */
+@media(max-width:560px){
+  .top{padding:10px 12px;gap:8px}
+  .brand{font-size:17px}
+  .rate{font-size:12px;padding:5px 10px;margin-left:0}
+  main{padding:6px 10px 48px}
+  .card{padding:14px;margin:10px 0;border-radius:14px}
+  h1{font-size:21px}
+  .balance{font-size:34px}
+  .seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .seg-btn{padding:11px 4px;font-size:13px}
+  .row{flex-direction:column}
+  .row>*{min-width:0}
+  .qrbox img,.qrbox canvas{max-width:100%;height:auto}
+  .tx{flex-direction:column;gap:4px}
+  .tx b{font-size:15px}
+  .addr{font-size:12px}
+  #qrReader{min-height:220px}
+}
